@@ -90,8 +90,7 @@ int main()
             playbackProgress = player.getPlaybackProgress();
             screen.PostEvent(Event::Custom);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-    });
+        } });
 
     auto previousButton = Button("⏮", [&]
                                  {  playlist.previousSong();
@@ -186,12 +185,12 @@ int main()
         Song *currentSong = playlist.getCurrentSong();
 
         float progress = playbackProgress.load();
-        const int barWidth = 50;
+        const int barWidth = 80;
         int filled = static_cast<int>(progress * barWidth);
         int empty = barWidth - filled;
 
-        const char *filledChar = u8"\u2501";
-        const char *emptyChar = u8"\u2500";
+        const char *filledChar = u8"\u2594";
+        const char *emptyChar = u8" ";
 
         std::string filledPart;
         for (int i = 0; i < filled; ++i)
