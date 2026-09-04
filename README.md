@@ -66,8 +66,7 @@ music-player/
 │   └── data/
 │       ├── Song.h            # Song data structure
 │       ├── Playlist.h        # Playlist interface
-│       ├── Playlist.cpp      # Playlist implementation
-│       └── Queue.h           # Generic queue data structure
+│       └── Playlist.cpp      # Playlist implementation
 ```
 
 ## Contributing
@@ -83,7 +82,7 @@ music-player/
 
 ## Roadmap
 
-- Integrate the `Queue` data structure for upcoming playback features such as:
+- Implement a `Queue` data structure for upcoming playback features:
   - Up-next queue management
   - Add songs to the playback queue
   - Clear or reorder the queue
