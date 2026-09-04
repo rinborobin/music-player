@@ -143,10 +143,10 @@ int main()
         vbox({
             text("  "),
 
-            text(" > Test 1"),
-            text("  Test 2"),
-            text("  Test 3"),
-            text("  Test 4"),
+            text(" > Album 1"),
+            text("  Album 2"),
+            text("  Next Album 3"),
+            text("  The Other New Album 4"),
         }));
 
     auto songs = window(
