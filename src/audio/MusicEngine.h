@@ -17,6 +17,10 @@ public:
     void resume();
     void next(Song *song);
 
+    float getCurrentTime();
+    float getDuration();
+    float getPlaybackProgress();
+
 private:
     ma_engine engine;
     ma_sound sound;

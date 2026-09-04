@@ -30,6 +30,45 @@ bool MusicEngine::isPlaying()
     return ma_sound_is_playing(&sound);
 }
 
+float MusicEngine::getCurrentTime()
+{
+    if (!soundInitialized)
+        return 0.0f;
+
+    float cursor;
+    ma_sound_get_cursor_in_seconds(&sound, &cursor);
+
+    return cursor;
+}
+
+float MusicEngine::getDuration()
+{
+    if (!soundInitialized)
+        return 0.0f;
+
+    float length;
+    ma_sound_get_length_in_seconds(&sound, &length);
+
+    return length;
+}
+
+float MusicEngine::getPlaybackProgress()
+{
+    if (!soundInitialized)
+        return 0.0f;
+
+    float length = 0.0f;
+    ma_sound_get_length_in_seconds(&sound, &length);
+
+    if (length == 0.0f)
+        return 0.0f;
+
+    float cursor = 0.0f;
+    ma_sound_get_cursor_in_seconds(&sound, &cursor);
+
+    return cursor / length;
+}
+
 bool MusicEngine::play(const std::string &filePath)
 {
     if (!initialized)
