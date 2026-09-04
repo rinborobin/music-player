@@ -185,25 +185,26 @@ int main()
         Song *currentSong = playlist.getCurrentSong();
 
         float progress = playbackProgress.load();
-        const int barWidth = 80;
+        const int barWidth = 55;
         int filled = static_cast<int>(progress * barWidth);
         int empty = barWidth - filled;
 
-        const char *barChar = u8"\u2500";
+        const char *filledChar = u8"\u2501";
+        const char *emptyChar = u8"\u2500";
 
         std::string filledPart;
         for (int i = 0; i < filled; ++i)
-            filledPart += barChar;
+            filledPart += filledChar;
 
         std::string emptyPart;
         for (int i = 0; i < empty; ++i)
-            emptyPart += barChar;
+            emptyPart += emptyChar;
 
         auto progressBar = hbox({
+            text("   "),
             text(filledPart) | color(Color::CyanLight),
-            text(emptyPart) | color(Color::RGB(0, 80, 120)),
+            text(emptyPart) | color(Color::RGB(0,51,102)),
         });
-
 
         auto nowPlaying = vbox({
 
