@@ -66,7 +66,8 @@ music-player/
 │   └── data/
 │       ├── Song.h            # Song data structure
 │       ├── Playlist.h        # Playlist interface
-│       └── Playlist.cpp      # Playlist implementation
+│       ├── Playlist.cpp      # Playlist implementation
+│       └── Queue.h           # Generic queue data structure
 ```
 
 ## Contributing
@@ -79,6 +80,13 @@ music-player/
    - `fix(ui): resolve playlist rendering issue`
    - `chore(build): update CMake minimum version`
 5. Open a pull request with a clear description of your changes.
+
+## Roadmap
+
+- Integrate the `Queue` data structure for upcoming playback features such as:
+  - Up-next queue management
+  - Add songs to the playback queue
+  - Clear or reorder the queue
 
 ## Notes
 
