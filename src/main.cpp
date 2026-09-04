@@ -189,21 +189,21 @@ int main()
         int filled = static_cast<int>(progress * barWidth);
         int empty = barWidth - filled;
 
-        const char *filledChar = u8"\u2594";
-        const char *emptyChar = u8" ";
+        const char *barChar = u8"\u2500";
 
         std::string filledPart;
         for (int i = 0; i < filled; ++i)
-            filledPart += filledChar;
+            filledPart += barChar;
 
         std::string emptyPart;
         for (int i = 0; i < empty; ++i)
-            emptyPart += emptyChar;
+            emptyPart += barChar;
 
         auto progressBar = hbox({
             text(filledPart) | color(Color::CyanLight),
-            text(emptyPart),
+            text(emptyPart) | color(Color::RGB(0, 80, 120)),
         });
+
 
         auto nowPlaying = vbox({
 
@@ -230,6 +230,7 @@ int main()
 
              vbox({
         nowPlaying,
+        text(" "),
         progressBar,
     }) | flex,
     });
