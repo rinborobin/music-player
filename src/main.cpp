@@ -1,10 +1,12 @@
-#include <iostream>
+
 
 #include "data/Playlist.h"
 #include "audio/MusicEngine.h"
 
 #include <iostream>
-
+#include <thread>
+#include <chrono>
+#include <atomic>
 #include <vector>
 
 #include <ftxui/component/screen_interactive.hpp>
@@ -26,6 +28,9 @@ int main()
 
     Playlist playlist;
     MusicEngine player;
+
+    std::atomic<float> playbackProgress{0.0f};
+    std::atomic<bool> running{true};
 
     playlist.addSong("Merry Christmas, i miss you", "Alex Chricton", "../music/Alex Crichton - Merry Christmas, i miss you (Lyrics).mp3");
     playlist.addSong("What If I Call", "Alex Chricton", "../music/Alex Crichton - What If I Call (Lyrics).mp3");
@@ -77,6 +82,16 @@ int main()
     };
 
     ScreenInteractive screen = ScreenInteractive::TerminalOutput();
+
+    std::thread progressThread([&]
+                               {
+        while (running)
+        {
+            playbackProgress = player.getPlaybackProgress();
+            screen.PostEvent(Event::Custom);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    });
 
     auto previousButton = Button("⏮", [&]
                                  {  playlist.previousSong();
@@ -169,12 +184,19 @@ int main()
                              {
 
         Song *currentSong = playlist.getCurrentSong();
-                                    
+
+        auto progressBar = gauge(playbackProgress.load())
+            | size(HEIGHT, EQUAL, 1)
+            | color(Color::CyanLight);
+
         auto nowPlaying = vbox({
 
         currentSong != nullptr
-            ? text("   NOW PLAYING: "+currentSong->title + " - " + currentSong->artist)
-            : text("  Nothing playing")
+
+            ? 
+            text("   NOW PLAYING: "+currentSong->title + " - " + currentSong->artist)
+            : text("   Nothing playing"),
+        
     });
 
     auto controls = hbox({
@@ -190,7 +212,10 @@ int main()
             | size(WIDTH, EQUAL, 10)
             | size(HEIGHT, EQUAL, 3),
 
-        nowPlaying
+             vbox({
+        nowPlaying,
+        progressBar,
+    }) | flex,
     });
 
     auto document = vbox({
@@ -206,6 +231,9 @@ int main()
         size(HEIGHT, EQUAL, 40); });
 
     screen.Loop(renderer);
+
+    running = false;
+    progressThread.join();
 
     player.stop();
 
