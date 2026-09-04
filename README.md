@@ -2,6 +2,8 @@
 
 A terminal-based music player built with C++.
 
+<img src="docs/preview.png" alt="Music Player Preview" width="800">
+
 ## Features
 
 - Play audio files from the terminal
