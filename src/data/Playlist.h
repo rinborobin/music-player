@@ -7,12 +7,13 @@
 class Playlist
 {
 private:
+    std::string name;
     Song *head;
     Song *tail;
     Song *current;
 
 public:
-    Playlist();
+    Playlist(const std::string &name);
 
     void addSong(const std::string &title,
                  const std::string &artist,
@@ -26,6 +27,8 @@ public:
     void nextSong();
     void previousSong();
     void displayCurrentSong();
+
+    std::string getName();
 };
 
 #endif

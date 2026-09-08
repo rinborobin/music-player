@@ -18,6 +18,7 @@ FetchContent_MakeAvailable(ftxui)
 add_executable(music-player
     src/main.cpp
     src/data/Playlist.cpp
+    src/data/PlaylistManager.cpp
     src/audio/MusicEngine.cpp
 )
 

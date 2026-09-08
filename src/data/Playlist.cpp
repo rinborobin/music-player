@@ -1,11 +1,18 @@
 #include <iostream>
 #include "Playlist.h"
 
-Playlist::Playlist()
+Playlist::Playlist(const std::string &name)
 {
+    this->name = name;
+
     head = nullptr;
     tail = nullptr;
     current = nullptr;
+}
+
+std::string Playlist::getName()
+{
+    return name;
 }
 
 void Playlist::addSong(const std::string &title,

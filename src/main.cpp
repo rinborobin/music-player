@@ -1,7 +1,8 @@
 
 
-#include "data/Playlist.h"
+#include "data/playlist.h"
 #include "audio/MusicEngine.h"
+#include "data/playlistManager.h"
 
 #include <iostream>
 #include <thread>
@@ -26,19 +27,26 @@ int main()
     bool started = false;
     bool paused = false;
 
-    Playlist playlist;
+    PlaylistManager playlistManager;
     MusicEngine player;
+
+    playlistManager.createPlaylist("My Playlist");
+    playlistManager.createPlaylist("My Playlist");
+    playlistManager.createPlaylist("Favorites");
+    playlistManager.createPlaylist("Chill");
+
+    Playlist *playlist = playlistManager.getCurrentPlaylist();
 
     std::atomic<float> playbackProgress{0.0f};
     std::atomic<bool> running{true};
 
-    playlist.addSong("Merry Christmas, i miss you", "Alex Chricton", "../music/Alex Crichton - Merry Christmas, i miss you (Lyrics).mp3");
-    playlist.addSong("What If I Call", "Alex Chricton", "../music/Alex Crichton - What If I Call (Lyrics).mp3");
+    playlist->addSong("Merry Christmas, i miss you", "Alex Chricton", "../music/Alex Crichton - Merry Christmas, i miss you (Lyrics).mp3");
+    playlist->addSong("What If I Call", "Alex Chricton", "../music/Alex Crichton - What If I Call (Lyrics).mp3");
 
     std::cout
         << "Before getSongs()" << std::endl;
 
-    auto songList = playlist.getSongs();
+    auto songList = playlist->getSongs();
 
     std::cout << "After getSongs()" << std::endl;
 
@@ -58,7 +66,7 @@ int main()
 
     auto songListElement = vbox({songElements});
 
-    Song *currentSong = playlist.getCurrentSong();
+    Song *currentSong = playlist->getCurrentSong();
 
     ButtonOption option;
 
@@ -93,9 +101,9 @@ int main()
         } });
 
     auto previousButton = Button("⏮", [&]
-                                 {  playlist.previousSong();
+                                 {  playlist->previousSong();
 
-                                    Song* song = playlist.getCurrentSong();
+                                    Song* song = playlist->getCurrentSong();
 
                                     if (song != nullptr)
                                     {
@@ -107,7 +115,7 @@ int main()
                              {
                                  if (!started)
                                  {
-                                     Song *song = playlist.getCurrentSong();
+                                     Song *song = playlist->getCurrentSong();
 
                                      if (song != nullptr)
                                      {
@@ -128,9 +136,9 @@ int main()
                                  } }, playOption);
 
     auto nextButton = Button("⏭", [&]
-                             {  playlist.nextSong();
+                             {  playlist->nextSong();
 
-                                Song* song = playlist.getCurrentSong();
+                                Song* song = playlist->getCurrentSong();
 
                                 if (song != nullptr)
                                 {
@@ -152,37 +160,43 @@ int main()
         nextButton,
     });
 
-    auto playlist_panel = window(
-        text("── Albums ──") | size(WIDTH, GREATER_THAN, 15) | center,
-        vbox({
-            text("  "),
-
-            text(" > Album 1"),
-            text("  Album 2"),
-            text("  Next Album 3"),
-            text("  The Other New Album 4"),
-        }));
-
     auto songs = window(
         text("── Songs ──"),
         vbox({text("                                          "),
               songListElement}));
 
-    auto mainArea = hbox({
-        playlist_panel | flex_grow_factor(4),
-        songs | flex_grow_factor(6),
-    });
-
-    auto document = vbox({
-                        mainArea | flex,
-                        controls,
-                    }) |
-                    borderRounded | bgcolor(Color::RGB(0, 0, 60)) | color(Color::CyanLight);
+    // auto document = vbox({
+    //                     mainArea | flex,
+    //                     controls,
+    //                 }) |
+    //                 borderRounded | bgcolor(Color::RGB(0, 0, 60)) | color(Color::CyanLight);
 
     auto renderer = Renderer(component, [&]
                              {
 
-        Song *currentSong = playlist.getCurrentSong();
+        auto playlists = playlistManager.getPlaylists();
+
+        std::vector<Element> playlistElements;
+
+        for (Playlist* playlistItem : playlists)
+        {
+            playlistElements.push_back(
+                text("  " + playlistItem->getName())
+            );
+        }
+
+        auto playlist_panel = window(
+            text("── Playlists ──") |
+                size(WIDTH, GREATER_THAN, 15) |
+                center,
+
+            vbox({
+                text("  "),
+                vbox(playlistElements),
+            })
+        );
+
+        Song *currentSong = playlist->getCurrentSong();
 
         float progress = playbackProgress.load();
         const int barWidth = 55;
@@ -234,6 +248,11 @@ int main()
         text(" "),
         progressBar,
     }) | flex,
+    });
+
+        auto mainArea = hbox({
+        playlist_panel | flex_grow_factor(4),
+        songs | flex_grow_factor(6),
     });
 
     auto document = vbox({
