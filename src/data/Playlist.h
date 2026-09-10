@@ -17,7 +17,8 @@ public:
 
     void addSong(const std::string &title,
                  const std::string &artist,
-                 const std::string &filePath);
+                 const std::string &filePath,
+                 const std::string &lyricPath);
     Song *getCurrentSong();
     Song *searchSongTitle(const std::string &title);
     Song *searchSongArtist(const std::string &artist);

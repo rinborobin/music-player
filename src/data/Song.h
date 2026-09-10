@@ -8,6 +8,7 @@ struct Song
     std::string title;
     std::string artist;
     std::string filePath;
+    std::string lyricPath;
 
     Song *next;
     Song *prev;

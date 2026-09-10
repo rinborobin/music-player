@@ -17,13 +17,15 @@ std::string Playlist::getName()
 
 void Playlist::addSong(const std::string &title,
                        const std::string &artist,
-                       const std::string &filePath)
+                       const std::string &filePath,
+                       const std::string &lyricPath)
 {
     Song *newSong = new Song;
 
     newSong->title = title;
     newSong->artist = artist;
     newSong->filePath = filePath;
+    newSong->lyricPath = lyricPath;
 
     if (head == nullptr)
     {
@@ -154,8 +156,6 @@ std::vector<Song *> Playlist::getSongs()
         return songs;
 
     Song *currentSong = head;
-
-    std::cout << "Hello From getSongs()" << std::endl;
 
     do
     {
