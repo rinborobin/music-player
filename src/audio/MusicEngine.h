@@ -4,6 +4,8 @@
 #include <string>
 #include "miniaudio.h"
 
+struct Song;
+
 class MusicEngine
 {
 public:
