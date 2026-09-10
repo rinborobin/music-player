@@ -20,6 +20,10 @@ add_executable(music-player
     src/data/Playlist.cpp
     src/data/PlaylistManager.cpp
     src/audio/MusicEngine.cpp
+
+    src/ui/MusicPlayerUI.cpp
+
+    src/data/LyricsManager.cpp
 )
 
 target_link_libraries(music-player
