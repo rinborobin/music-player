@@ -59,17 +59,43 @@ A terminal-based music player built with C++.
 music-player/
 ├── CMakeLists.txt
 ├── README.md
+├── docs/
+│   ├── CONTRIBUTORS_GUIDE.md # Architecture and contribution guide
+│   └── preview.png
 ├── src/
 │   ├── main.cpp              # Application entry point and UI
+│   ├── debug_main.cpp        # Debug portal entry point
 │   ├── audio/
 │   │   ├── MusicEngine.h     # Audio playback interface
 │   │   ├── MusicEngine.cpp   # Audio playback implementation
 │   │   └── miniaudio.h       # Single-header audio library
-│   └── data/
-│       ├── Song.h            # Song data structure
-│       ├── Playlist.h        # Playlist interface
-│       └── Playlist.cpp      # Playlist implementation
+│   ├── data/
+│   │   ├── Song.h            # Song data structure
+│   │   ├── Playlist.h/.cpp   # Playlist (circular linked list)
+│   │   ├── PlaylistManager.h/.cpp
+│   │   ├── LyricsManager.h/.cpp
+│   │   ├── Queue.h           # Placeholder
+│   │   └── Queue.cpp         # Placeholder
+│   ├── ui/
+│   │   ├── MusicPlayerUI.h   # Terminal UI interface
+│   │   └── MusicPlayerUI.cpp # Terminal UI implementation
+│   ├── debug/
+│   │   ├── DebugCLI.h        # Debug/test CLI interface
+│   │   └── DebugCLI.cpp      # Debug/test CLI implementation
+│   └── utils/
+│       └── Logger.h          # Lightweight logging utility
 ```
+
+## Testing & Debugging
+
+A separate command-line debug portal is available for testing audio and data features without launching the TUI:
+
+```bash
+cd build
+./music-player-debug
+```
+
+This interactive menu lets you set up sample playlists, test playback controls, inspect song state, and verify lyric parsing. See `docs/CONTRIBUTORS_GUIDE.md` for details.
 
 ## Contributing
 

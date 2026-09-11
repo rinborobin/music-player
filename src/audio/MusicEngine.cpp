@@ -2,6 +2,7 @@
 #include "miniaudio.h"
 
 #include "../data/Playlist.h"
+#include "../utils/Logger.h"
 #include "MusicEngine.h"
 
 #include <iostream>
@@ -73,6 +74,7 @@ bool MusicEngine::play(const std::string &filePath)
 {
     if (!initialized)
     {
+        LOG_ERROR("MusicEngine is not initialized");
         return false;
     }
 
@@ -92,18 +94,30 @@ bool MusicEngine::play(const std::string &filePath)
 
     if (result != MA_SUCCESS)
     {
+        LOG_ERROR("Failed to load audio file: " + filePath);
         return false;
     }
 
     soundInitialized = true;
 
-    return ma_sound_start(&sound) == MA_SUCCESS;
+    bool started = (ma_sound_start(&sound) == MA_SUCCESS);
+    if (started)
+    {
+        LOG_INFO("Started playback: " + filePath);
+    }
+    else
+    {
+        LOG_ERROR("Failed to start playback: " + filePath);
+    }
+
+    return started;
 }
 
 void MusicEngine::stop()
 {
     if (soundInitialized)
     {
+        LOG_INFO("Stopping playback");
         ma_sound_stop(&sound);
     }
 }
@@ -112,6 +126,7 @@ void MusicEngine::pause()
 {
     if (soundInitialized)
     {
+        LOG_INFO("Pausing playback");
         ma_sound_stop(&sound);
     }
 }
@@ -120,6 +135,7 @@ void MusicEngine::resume()
 {
     if (soundInitialized)
     {
+        LOG_INFO("Resuming playback");
         ma_sound_start(&sound);
     }
 }
@@ -128,12 +144,11 @@ void MusicEngine::next(Song *song)
 {
     if (song != nullptr)
     {
-        std::cout << "Now playing: "
-                  << song->title << " - "
-                  << song->artist << std::endl;
-
+        LOG_INFO("Now playing: " + song->title + " - " + song->artist);
         play(song->filePath);
     }
     else
-        std::cout << "There is no next song in the playlist." << std::endl;
+    {
+        LOG_WARN("There is no next song in the playlist.");
+    }
 }
