@@ -4,6 +4,7 @@
 #include "../audio/MusicEngine.h"
 #include "../data/LyricsManager.h"
 #include "../data/PlaylistManager.h"
+#include "../data/Queue.h"
 
 #include <string>
 
@@ -30,11 +31,24 @@ private:
     void testProgress();
     void printCurrentSong();
 
+    void queueAddCurrentSong();
+    void queuePlayNext();
+    void queuePeek();
+    void queueDisplay();
+    void queueClear();
+    void queueMove();
+    void queueRemove();
+
+    void testSortByTitle();
+    void testSortByArtist();
+    void displayAllSongs();
+
     bool shouldExit;
 
     PlaylistManager playlistManager;
     MusicEngine player;
     LyricsManager lyricsManager;
+    // Queue playbackQueue;
 
     std::string sampleSongPath;
     std::string sampleLyricPath;
