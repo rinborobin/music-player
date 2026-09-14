@@ -29,6 +29,12 @@ int main()
             "../music/Alex Crichton - What If I Call (Lyrics).mp3",
             "../music/Alex Crichton - What If I Call.lrc");
 
+        playlist->addSong(
+            "Shape of My Heart",
+            "Backstreet Boys",
+            "../music/Backstreet Boys - Shape of My Heart (Lyrics).mp3",
+            "../music/Backstreet Boys - Shape of My Heart.lrc");
+
         bool loaded = lyricsManager.loadLyrics(
             "../music/Alex Crichton - What If I Call.lrc");
 

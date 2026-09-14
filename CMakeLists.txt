@@ -24,6 +24,7 @@ add_executable(music-player
     src/ui/MusicPlayerUI.cpp
 
     src/data/LyricsManager.cpp
+    # src/data/Queue.cpp
 )
 
 target_link_libraries(music-player
@@ -34,19 +35,20 @@ target_link_libraries(music-player
 )
 
 # Debug / testing portal (no UI)
-add_executable(music-player-debug
-    src/debug_main.cpp
-    src/debug/DebugCLI.cpp
+# add_executable(music-player-debug
+#     src/debug_main.cpp
+#     # src/debug/DebugCLI.cpp
 
-    src/data/Playlist.cpp
-    src/data/PlaylistManager.cpp
-    src/audio/MusicEngine.cpp
-    src/data/LyricsManager.cpp
-)
+#     src/data/Playlist.cpp
+#     src/data/PlaylistManager.cpp
+#     src/audio/MusicEngine.cpp
+#     src/data/LyricsManager.cpp
+#     # src/data/Queue.cpp
+# )
 
-target_link_libraries(music-player-debug
-    PRIVATE
-    ftxui::screen
-    ftxui::dom
-    ftxui::component
-)
+# target_link_libraries(music-player-debug
+#     PRIVATE
+#     ftxui::screen
+#     ftxui::dom
+#     ftxui::component
+# )

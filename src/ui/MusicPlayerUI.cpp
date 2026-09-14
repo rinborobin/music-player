@@ -1,5 +1,6 @@
 #include "MusicPlayerUI.h"
 #include "../data/LyricsManager.h"
+#include "../data/Song.h"
 
 #include <chrono>
 #include <thread>
@@ -26,12 +27,18 @@ MusicPlayerUI::~MusicPlayerUI()
 void MusicPlayerUI::playCurrentSong()
 {
     Playlist *playlist = playlistManager.getCurrentPlaylist();
+
     if (playlist != nullptr)
     {
         Song *song = playlist->getCurrentSong();
+
         if (song != nullptr)
         {
+            lyricsManager.clear();
+            lyricsManager.loadLyrics(song->lyricPath);
+
             player.play(song->filePath);
+
             started = true;
             paused = false;
         }
@@ -59,13 +66,20 @@ void MusicPlayerUI::togglePlayPause()
 void MusicPlayerUI::playNext()
 {
     Playlist *playlist = playlistManager.getCurrentPlaylist();
+
     if (playlist != nullptr)
     {
         playlist->nextSong();
+
         Song *song = playlist->getCurrentSong();
+
         if (song != nullptr)
         {
+            lyricsManager.clear();
+            lyricsManager.loadLyrics(song->lyricPath);
+
             player.play(song->filePath);
+
             started = true;
             paused = false;
         }
@@ -75,13 +89,20 @@ void MusicPlayerUI::playNext()
 void MusicPlayerUI::playPrevious()
 {
     Playlist *playlist = playlistManager.getCurrentPlaylist();
+
     if (playlist != nullptr)
     {
         playlist->previousSong();
+
         Song *song = playlist->getCurrentSong();
+
         if (song != nullptr)
         {
+            lyricsManager.clear();
+            lyricsManager.loadLyrics(song->lyricPath);
+
             player.play(song->filePath);
+
             started = true;
             paused = false;
         }

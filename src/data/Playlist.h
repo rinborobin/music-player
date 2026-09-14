@@ -29,6 +29,9 @@ public:
     void previousSong();
     void displayCurrentSong();
 
+    void sortByTitle();
+    void sortByArtist();
+
     std::string getName();
 };
 

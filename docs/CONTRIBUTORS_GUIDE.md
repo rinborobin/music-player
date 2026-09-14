@@ -112,7 +112,22 @@ A `Song` is a node in a circular doubly linked list.
 
 **Key point:** Lyrics are independent of songs. The UI asks for the current lyric using the audio engine's reported playback time.
 
-### 6. `MusicPlayerUI` (`src/ui/`)
+### 6. `Queue` (`src/data/`)
+
+**Responsibility:** A playback "up next" queue.
+
+- `enqueue(Song *)` — adds a song to the back of the queue.
+- `dequeue()` — removes and returns the front song.
+- `peek()` — returns the front song without removing it.
+- `clear()` — empties the queue.
+- `isEmpty()` / `size()` — queue state.
+- `removeAt(index)` — removes a song at a specific position.
+- `move(fromIndex, toIndex)` — reorders a song within the queue.
+- `display()` — logs the current queue contents.
+
+**Key point:** The queue stores `Song *` pointers but does not own the songs (the `Playlist` owns them). It is currently used by the debug portal and is not yet wired into the main TUI.
+
+### 7. `MusicPlayerUI` (`src/ui/`)
 
 **Responsibility:** The main interactive terminal interface.
 
@@ -128,7 +143,7 @@ A `Song` is a node in a circular doubly linked list.
 
 **Key point:** The UI does not own the data or the audio engine; it holds references to `MusicEngine`, `PlaylistManager`, and `LyricsManager`.
 
-### 7. `main.cpp`
+### 8. `main.cpp`
 
 **Responsibility:** Bootstrap the application.
 
@@ -142,7 +157,7 @@ Current startup flow:
 6. Load the corresponding `.lrc` file.
 7. If lyrics load successfully, construct `MusicPlayerUI` and run it.
 
-### 8. `DebugCLI` (`src/debug/`) — Testing Portal
+### 9. `DebugCLI` (`src/debug/`) — Testing Portal
 
 **Responsibility:** Test features without launching the FTXUI interface.
 
@@ -156,10 +171,11 @@ The debug portal lets you:
 - Inspect the current song and playlist state.
 - Test `LyricsManager` parsing and lookup.
 - Monitor playback progress for a few seconds.
+- Test the `Queue`: enqueue, dequeue, peek, display, clear, move, and remove.
 
 Use this when you want to verify audio/data logic quickly without dealing with the TUI event loop.
 
-### 9. `Logger` (`src/utils/`)
+### 10. `Logger` (`src/utils/`)
 
 **Responsibility:** Lightweight logging helper.
 
@@ -214,8 +230,8 @@ music-player/
     │   ├── Playlist.h / .cpp   ← circular doubly linked list
     │   ├── PlaylistManager.h / .cpp
     │   ├── LyricsManager.h / .cpp
-    │   ├── Queue.h             ← empty placeholder
-    │   └── Queue.cpp           ← empty placeholder
+    │   ├── Queue.h             ← playback queue
+    │   └── Queue.cpp           ← playback queue implementation
     ├── ui/
     │   ├── MusicPlayerUI.h
     │   └── MusicPlayerUI.cpp
@@ -226,7 +242,7 @@ music-player/
         └── Logger.h            ← lightweight logging utility
 ```
 
-> **Note:** `Queue.h` and `Queue.cpp` exist but are currently empty. They are placeholders for a future feature (see [Roadmap](#roadmap)). They are also not compiled into the executable yet.
+> **Note:** `Queue` is implemented as a playback "up next" queue. It is currently used by the debug portal and is compiled into both executables. It is not yet wired into the main TUI playback controls.
 
 ---
 
@@ -273,6 +289,13 @@ You will see a menu like:
 8. Show current song info
 9. Test lyrics loading and lookup
 10. Show playback progress for 5 seconds
+11. Add current song to playback queue
+12. Play next song from queue
+13. Peek queue front
+14. Display queue
+15. Clear queue
+16. Move song in queue
+17. Remove song from queue
 0. Exit
 ================================================
 >
@@ -288,7 +311,7 @@ On the first build, CMake will download FTXUI automatically via `FetchContent`.
 
 - **Hardcoded song paths:** `main.cpp` and `DebugCLI` currently load a specific song and lyric file (`Alex Crichton - What If I Call`). New contributors should know that local paths may need adjustment for the player or debug portal to work on their machine.
 - **No file browser:** Songs are added programmatically, not loaded from the `music/` folder at runtime.
-- **No queue logic yet:** The `Queue` files are placeholders and are not used by the UI or audio engine.
+- **Queue not wired to main UI:** The `Queue` is implemented and usable via the debug portal, but it is not yet connected to the main FTXUI playback controls.
 - **Playlist selection UI:** The UI renders the list of playlists but does not yet let the user switch between them interactively.
 - **Memory management:** `Playlist`, `PlaylistManager`, and `MusicEngine` use raw `new`/`delete` and raw pointers. There is no smart-pointer ownership yet.
 
@@ -298,8 +321,7 @@ On the first build, CMake will download FTXUI automatically via `FetchContent`.
 
 Planned future work includes:
 
-- Implementing a real `Queue` data structure for an "up next" playback queue.
-- Adding songs to the queue, clearing it, and reordering items.
+- Wire the `Queue` into the main FTXUI playback controls (e.g., "Add to queue", "Play next").
 - Loading songs dynamically from the `music/` directory.
 
 ---

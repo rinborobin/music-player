@@ -74,8 +74,8 @@ music-player/
 │   │   ├── Playlist.h/.cpp   # Playlist (circular linked list)
 │   │   ├── PlaylistManager.h/.cpp
 │   │   ├── LyricsManager.h/.cpp
-│   │   ├── Queue.h           # Placeholder
-│   │   └── Queue.cpp         # Placeholder
+│   │   ├── Queue.h           # Playback "up next" queue
+│   │   └── Queue.cpp         # Playback queue implementation
 │   ├── ui/
 │   │   ├── MusicPlayerUI.h   # Terminal UI interface
 │   │   └── MusicPlayerUI.cpp # Terminal UI implementation
@@ -95,7 +95,7 @@ cd build
 ./music-player-debug
 ```
 
-This interactive menu lets you set up sample playlists, test playback controls, inspect song state, and verify lyric parsing. See `docs/CONTRIBUTORS_GUIDE.md` for details.
+This interactive menu lets you set up sample playlists, test playback controls, inspect song state, verify lyric parsing, and exercise the playback queue. See `docs/CONTRIBUTORS_GUIDE.md` for details.
 
 ## Contributing
 
@@ -110,10 +110,9 @@ This interactive menu lets you set up sample playlists, test playback controls, 
 
 ## Roadmap
 
-- Implement a `Queue` data structure for upcoming playback features:
-  - Up-next queue management
-  - Add songs to the playback queue
-  - Clear or reorder the queue
+- Wire the `Queue` into the main FTXUI playback controls:
+  - "Add to queue" and "Play next" UI actions
+  - Visual queue management in the TUI
 
 ## Notes
 
