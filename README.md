@@ -7,9 +7,13 @@ A terminal-based music player built with C++.
 ## Features
 
 - Play audio files from the terminal
-- Navigate playlists with previous/next controls
+- Switch between playlists and select songs interactively
 - Pause, resume, and stop playback
+- Previous / next track controls
+- Auto-advance to the next song when playback ends
 - Interactive TUI built with FTXUI
+- **Up Next queue**: enqueue songs and play them in FIFO order
+- Executable-relative music path resolution (run from any working directory)
 
 ## Tech Stack
 
@@ -110,12 +114,12 @@ This interactive menu lets you set up sample playlists, test playback controls, 
 
 ## Roadmap
 
-- Wire the `Queue` into the main FTXUI playback controls:
-  - "Add to queue" and "Play next" UI actions
-  - Visual queue management in the TUI
+- Load songs dynamically from the `music/` directory at runtime.
+- Volume control.
+- Shuffle / repeat modes.
 
 ## Notes
 
-- Place audio files in a `music/` directory at the project root.
+- Place audio files in a `music/` directory at the project root or next to the executable.
 - The `music/` and `build/` directories are ignored by Git.
 - The project currently uses sample song paths in `src/main.cpp`. Update them to match your local audio files.

@@ -33,19 +33,19 @@ The application is built around four main concerns:
 ┌───────────────────────▼─────────────────────────────────────┐
 │                    MusicPlayerUI                            │
 │  Renders TUI, handles buttons, reads/writes playback state  │
-└──────┬────────────────────┬─────────────────────────────────┘
-       │ uses               │ uses
-┌──────▼──────┐    ┌────────▼────────┐    ┌──────────────────┐
-│ MusicEngine │    │ PlaylistManager │    │   LyricsManager  │
-│  (audio)    │    │  (playlists)    │    │ (lyrics display) │
-└──────┬──────┘    └────────┬────────┘    └──────────────────┘
-       │                    │
-       │ plays files from   │ manages
-┌──────▼──────┐    ┌────────▼────────┐
-│   miniaudio │    │    Playlist     │
-│   library   │    │  (linked list   │
-│             │    │   of Songs)     │
-└─────────────┘    └─────────────────┘
+└──────┬──────────┬───────────────┬────────────────────────────┘
+       │ uses     │ uses          │ uses
+┌──────▼──────┐ ┌─▼────────────┐ ┌▼─────────────┐ ┌───────────▼──┐
+│ MusicEngine │ │PlaylistManager│ │ LyricsManager│ │    Queue     │
+│  (audio)    │ │  (playlists)  │ │(lyrics disp.)│ │ (up next)    │
+└──────┬──────┘ └───────┬────────┘ └──────────────┘ └──────────────┘
+       │                │
+       │ plays files from│ manages
+┌──────▼──────┐ ┌────────▼────────┐
+│   miniaudio │ │    Playlist     │
+│   library   │ │  (linked list   │
+│             │ │   of Songs)     │
+└─────────────┘ └─────────────────┘
 ```
 
 ---
@@ -60,6 +60,8 @@ The application is built around four main concerns:
 - Loads a file into an `ma_sound` object when `play()` is called.
 - Provides `play`, `pause`, `resume`, `stop`, and `next`.
 - Reports `getCurrentTime()`, `getDuration()`, and `getPlaybackProgress()`.
+- Registers an end-of-sound callback so the UI can auto-advance when a track finishes.
+- Exposes `consumeFinished()` to detect a natural song end.
 
 **Key point:** A song is loaded fresh each time `play()` is called. The engine does not hold a playlist; it only knows the file path it is currently playing.
 
@@ -86,6 +88,7 @@ A `Song` is a node in a circular doubly linked list.
 
 - `addSong(...)` — appends a new song to the circular list.
 - `nextSong()` / `previousSong()` — move the internal `current` pointer.
+- `selectSong(index)` — sets the current song by index.
 - `getCurrentSong()` — returns the currently selected song.
 - `getSongs()` — returns a flat `std::vector<Song *>` for UI rendering.
 - `searchSongTitle(...)` / `searchSongArtist(...)` — linear searches.
@@ -97,9 +100,10 @@ A `Song` is a node in a circular doubly linked list.
 
 **Responsibility:** Owns multiple `Playlist` objects and tracks which playlist is currently active.
 
-- `createPlaylist(name)` — creates a new playlist and sets it as current only if no playlist exists yet.
+- `createPlaylist(name)` — creates a new playlist, returns a pointer to it, and sets it as current only if no playlist exists yet.
 - `getPlaylists()` — returns all playlists.
 - `getCurrentPlaylist()` — returns the active playlist.
+- `selectPlaylist(index)` — switches the active playlist by index.
 
 **Key point:** Currently, creating playlists with the same name is allowed (it does not deduplicate).
 
@@ -116,32 +120,36 @@ A `Song` is a node in a circular doubly linked list.
 
 **Responsibility:** A playback "up next" queue.
 
-- `enqueue(Song *)` — adds a song to the back of the queue.
-- `dequeue()` — removes and returns the front song.
+- `addSongToQueue(Song *)` — adds a song to the back of the queue.
+- `deQueue()` — removes and returns the front song.
 - `peek()` — returns the front song without removing it.
-- `clear()` — empties the queue.
-- `isEmpty()` / `size()` — queue state.
-- `removeAt(index)` — removes a song at a specific position.
-- `move(fromIndex, toIndex)` — reorders a song within the queue.
-- `display()` — logs the current queue contents.
+- `clearQueue()` — empties the queue.
+- `isEmpty()` / `getQueueSize()` — queue state.
+- `removeQueueAt(index)` — removes a song at a specific position.
+- `getQueueSongs()` — returns a vector of queued songs for UI rendering without dequeuing.
 
-**Key point:** The queue stores `Song *` pointers but does not own the songs (the `Playlist` owns them). It is currently used by the debug portal and is not yet wired into the main TUI.
+**Key point:** The queue stores `Song *` pointers but does not own the songs (the `Playlist` owns them). It is wired into the main TUI as the **Up Next** panel and is also used by the debug portal.
 
 ### 7. `MusicPlayerUI` (`src/ui/`)
 
 **Responsibility:** The main interactive terminal interface.
 
 - `run()` — starts the FTXUI event loop.
-- Spawns a background thread that updates `playbackProgress` 10 times per second and posts a custom UI refresh event.
+- Spawns a background thread that updates `playbackProgress` 10 times per second, detects when the current song ends, and posts custom UI refresh events.
 - Renders:
-  - **Playlist panel** (left)
-  - **Songs panel** (middle) with a lyrics strip at the bottom
-  - **Controls** (bottom): previous, play/pause, next, progress bar, and "Now Playing"
-- Handles button clicks:
+  - **Playlist panel** (left) — click to switch playlists.
+  - **Songs panel** (center/right) — scrollable song list with an **Up Next** queue box at the bottom.
+  - **Controls** (bottom): previous, play/pause, next, **Add** (enqueue selected song), progress bar, and "Now Playing".
+- Handles user actions:
+  - Click a song to play it.
+  - Click a playlist to browse it (does not affect the queue or currently playing song).
+  - Click **Add** to enqueue the selected song.
+  - Click **⏭** to play the next queued song, or the next playlist song if the queue is empty.
   - `togglePlayPause()` — starts playback or pauses/resumes.
-  - `playNext()` / `playPrevious()` — change the current song in the active playlist and start playback.
+  - `playNext()` / `playPrevious()` — change the current song.
+- Auto-advances to the next queued/playlist song when playback ends naturally.
 
-**Key point:** The UI does not own the data or the audio engine; it holds references to `MusicEngine`, `PlaylistManager`, and `LyricsManager`.
+**Key point:** The UI does not own the data or the audio engine; it holds references to `MusicEngine`, `PlaylistManager`, `LyricsManager`, and owns a `Queue`.
 
 ### 8. `main.cpp`
 
@@ -149,13 +157,12 @@ A `Song` is a node in a circular doubly linked list.
 
 Current startup flow:
 
-1. Create `PlaylistManager`.
-2. Create `MusicEngine`.
-3. Create `LyricsManager`.
-4. Create several playlists (note: `"My Playlist"` is created twice in the current code).
-5. Add a hardcoded sample song to the current playlist.
-6. Load the corresponding `.lrc` file.
-7. If lyrics load successfully, construct `MusicPlayerUI` and run it.
+1. Create `PlaylistManager`, `MusicEngine`, and `LyricsManager`.
+2. Create several playlists (`My Playlist`, `Favorites`, `Chill`).
+3. Resolve the `music/` directory relative to the executable (falls back to current working directory).
+4. Add hardcoded sample songs to each playlist.
+5. Load the corresponding `.lrc` file.
+6. If lyrics load successfully, construct `MusicPlayerUI` and run it.
 
 ### 9. `DebugCLI` (`src/debug/`) — Testing Portal
 
@@ -196,14 +203,14 @@ LOG_ERROR("Failed to load file: " + filePath);
 
 ## Data Flow During Playback
 
-1. The user clicks the **play** button.
-2. `MusicPlayerUI::togglePlayPause()` calls `playCurrentSong()`.
-3. `playCurrentSong()` asks `PlaylistManager` for the current `Playlist`, then asks that playlist for its current `Song`.
-4. `MusicPlayerUI` passes `song->filePath` to `MusicEngine::play()`.
-5. `MusicEngine` initializes a miniaudio `ma_sound` from the file path and starts it.
-6. In parallel, the background progress thread repeatedly calls `player.getPlaybackProgress()` and triggers UI redraws.
-7. During each redraw, `renderSongs()` asks `MusicEngine` for `getCurrentTime()` and passes it to `LyricsManager::getCurrentLyric(...)` to show the matching lyric line.
-8. When the user clicks **next** or **previous**, the playlist's `current` pointer moves, and the new song's file path is sent to `MusicEngine::play()`.
+1. The user clicks a song or the **play** button.
+2. `MusicPlayerUI` selects the song and calls `playCurrentSong()` / `playSong(Song *)`.
+3. `MusicPlayerUI` passes `song->filePath` to `MusicEngine::play()`.
+4. `MusicEngine` initializes a miniaudio `ma_sound` from the file path, registers an end-of-sound callback, and starts it.
+5. In parallel, the background progress thread repeatedly calls `player.getPlaybackProgress()` and triggers UI redraws.
+6. During each redraw, `renderNowPlaying()` asks `MusicEngine` for `getCurrentTime()` and passes it to `LyricsManager::getCurrentLyric(...)` to show the matching lyric line.
+7. When the user clicks **next**, `playNext()` checks the `Queue` first. If it is not empty, the front song is dequeued and played; otherwise the playlist's `current` pointer moves forward.
+8. When the current song ends naturally, the end-of-sound callback sets a flag; the progress thread detects it and calls `playNext()` to continue playback.
 
 ---
 
@@ -242,7 +249,7 @@ music-player/
         └── Logger.h            ← lightweight logging utility
 ```
 
-> **Note:** `Queue` is implemented as a playback "up next" queue. It is currently used by the debug portal and is compiled into both executables. It is not yet wired into the main TUI playback controls.
+> **Note:** `Queue` is implemented as a playback "up next" queue. It is wired into the main TUI as the **Up Next** panel and is also used by the debug portal.
 
 ---
 
@@ -309,11 +316,9 @@ On the first build, CMake will download FTXUI automatically via `FetchContent`.
 
 ## Important Current Limitations
 
-- **Hardcoded song paths:** `main.cpp` and `DebugCLI` currently load a specific song and lyric file (`Alex Crichton - What If I Call`). New contributors should know that local paths may need adjustment for the player or debug portal to work on their machine.
-- **No file browser:** Songs are added programmatically, not loaded from the `music/` folder at runtime.
-- **Queue not wired to main UI:** The `Queue` is implemented and usable via the debug portal, but it is not yet connected to the main FTXUI playback controls.
-- **Playlist selection UI:** The UI renders the list of playlists but does not yet let the user switch between them interactively.
-- **Memory management:** `Playlist`, `PlaylistManager`, and `MusicEngine` use raw `new`/`delete` and raw pointers. There is no smart-pointer ownership yet.
+- **No file browser:** Songs are added programmatically in `main.cpp`, not loaded from the `music/` folder at runtime.
+- **Memory management:** `Playlist`, `PlaylistManager`, `Queue`, and `MusicEngine` use raw `new`/`delete` and raw pointers. There is no smart-pointer ownership yet.
+- **Single audio device:** `MusicEngine` uses the default miniaudio device with no volume or device-selection controls.
 
 ---
 
@@ -321,8 +326,9 @@ On the first build, CMake will download FTXUI automatically via `FetchContent`.
 
 Planned future work includes:
 
-- Wire the `Queue` into the main FTXUI playback controls (e.g., "Add to queue", "Play next").
 - Loading songs dynamically from the `music/` directory.
+- Volume control and audio device selection.
+- Shuffle / repeat playback modes.
 
 ---
 
