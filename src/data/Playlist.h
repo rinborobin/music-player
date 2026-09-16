@@ -32,6 +32,8 @@ public:
     void sortByTitle();
     void sortByArtist();
 
+    std::vector<Song*> searchSongs(const std::string &query);
+
     std::string getName();
 };
 

@@ -71,6 +71,8 @@ void DebugCLI::printMenu()
     std::cout << "18. Sort playlist by title (debug)\n";
     std::cout << "19. Sort playlist by artist (debug)\n";
     std::cout << "20. Display all songs in current playlist\n";
+    std::cout << "21. Search song by title\n";
+    std::cout << "22. Search song by artist\n";
     std::cout << "0. Exit\n";
     std::cout << "================================================\n";
 }
@@ -138,6 +140,12 @@ void DebugCLI::handleInput(int choice)
         break;
     case 20:
         displayAllSongs();
+        break;
+    case 21:
+        testSearchByTitle();
+        break;
+    case 22:
+        testSearchByArtist();
         break;
     case 0:
         shouldExit = true;
@@ -572,4 +580,34 @@ void DebugCLI::queueRemove()
 
     // playbackQueue.removeAt(index);
     LOG_WARN("Queue is not wired up in this debug build");
+}
+
+void DebugCLI::testSearchByTitle()
+{
+    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    if (!playlist) return;
+
+    std::string title;
+    std::cout << "Enter title: ";
+    std::cin.ignore(10000, '\n');
+    std::getline(std::cin, title);
+
+    Song *s = playlist->searchSongTitle(title);
+    if (s) LOG_INFO("Found: " + s->title + " - " + s->artist);
+    else LOG_WARN("Not found");
+}
+
+void DebugCLI::testSearchByArtist()
+{
+    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    if (!playlist) return;
+
+    std::string artist;
+    std::cout << "Enter artist: ";
+    std::cin.ignore(10000, '\n');
+    std::getline(std::cin, artist);
+
+    Song *s = playlist->searchSongArtist(artist);
+    if (s) LOG_INFO("Found: " + s->title + " - " + s->artist);
+    else LOG_WARN("Not found");
 }

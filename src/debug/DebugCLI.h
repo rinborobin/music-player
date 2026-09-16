@@ -43,6 +43,9 @@ private:
     void testSortByArtist();
     void displayAllSongs();
 
+    void testSearchByTitle();
+    void testSearchByArtist();
+
     bool shouldExit;
 
     PlaylistManager playlistManager;

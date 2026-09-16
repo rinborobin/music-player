@@ -38,20 +38,22 @@ int main()
         bool loaded = lyricsManager.loadLyrics(
             "../music/Alex Crichton - What If I Call.lrc");
 
-        if (!loaded)
-        {
-            std::cout << "Failed to load lyrics.\n";
-        }
-        else
-        {
-            std::cout << "Lyrics loaded successfully!\n";
+        playlist->displayPlaylist();
 
-            auto lyrics = lyricsManager.getLyrics();
+        // if (!loaded)
+        // {
+        //     std::cout << "Failed to load lyrics.\n";
+        // }
+        // else
+        // {
+        //     std::cout << "Lyrics loaded successfully!\n";
 
-            MusicPlayerUI ui(player, playlistManager, lyricsManager);
-            ui.run();
+        //     auto lyrics = lyricsManager.getLyrics();
 
-            return 0;
-        }
+        //     MusicPlayerUI ui(player, playlistManager, lyricsManager);
+        //     ui.run();
+
+        //     return 0;
+        // }
     }
 }

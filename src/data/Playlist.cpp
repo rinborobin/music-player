@@ -1,10 +1,13 @@
 #include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <cctype>
 #include "Playlist.h"
 
 Playlist::Playlist(const std::string &name)
 {
     this->name = name;
-
     head = nullptr;
     tail = nullptr;
     current = nullptr;
@@ -21,7 +24,6 @@ void Playlist::addSong(const std::string &title,
                        const std::string &lyricPath)
 {
     Song *newSong = new Song;
-
     newSong->title = title;
     newSong->artist = artist;
     newSong->filePath = filePath;
@@ -47,76 +49,66 @@ void Playlist::addSong(const std::string &title,
         tail = newSong;
     }
 }
+
 Song *Playlist::searchSongTitle(const std::string &title)
 {
+    if (head == nullptr) return nullptr;
 
     Song *currentSong = head;
-
-    while (currentSong != nullptr)
+    do
     {
         if (currentSong->title == title)
         {
             return currentSong;
         }
         currentSong = currentSong->next;
-    }
+    } while (currentSong != head);
 
     return nullptr;
 }
 
 Song *Playlist::searchSongArtist(const std::string &artist)
 {
+    if (head == nullptr) return nullptr;
 
     Song *currentSong = head;
-
-    while (currentSong != nullptr)
+    do
     {
         if (currentSong->artist == artist)
         {
             return currentSong;
         }
         currentSong = currentSong->next;
-    }
+    } while (currentSong != head);
 
     return nullptr;
 }
 
 void Playlist::removeSong(Song *song)
 {
-    if (song == nullptr)
+    if (song == nullptr || head == nullptr)
         return;
 
-    if (song->prev != nullptr)
+    // Single node case
+    if (head == tail && head == song)
+    {
+        head = nullptr;
+        tail = nullptr;
+        current = nullptr;
+    }
+    else
     {
         song->prev->next = song->next;
-    }
-    else
-    {
-        head = song->next;
-    }
-
-    if (song->next != nullptr)
-    {
         song->next->prev = song->prev;
-    }
-    else
-    {
-        tail = song->prev;
-    }
 
-    if (current == song)
-    {
-        current = song->next;
-
-        if (current == nullptr)
-        {
-            current = tail;
-        }
+        if (head == song) head = song->next;
+        if (tail == song) tail = song->prev;
+        if (current == song) current = song->next;
     }
 
     std::cout << song->title << " - "
               << song->artist
-              << " Removed from the playlist."
+              << " removed from the playlist."
               << std::endl;
 
     delete song;
@@ -139,8 +131,7 @@ void Playlist::displayPlaylist()
     {
         std::cout << index << ". "
                   << currentSong->title << " - "
-                  << currentSong->artist << std::endl
-                  << std::endl;
+                  << currentSong->artist << std::endl;
 
         currentSong = currentSong->next;
         index++;
@@ -174,6 +165,7 @@ void Playlist::nextSong()
 
     current = current->next;
 }
+
 void Playlist::previousSong()
 {
     if (current == nullptr)
@@ -181,14 +173,57 @@ void Playlist::previousSong()
 
     current = current->prev;
 }
+
 void Playlist::displayCurrentSong()
 {
-    std::cout << "Now playing: " + current->title + " - " + current->artist << std::endl;
+    if (current == nullptr)
+    {
+        std::cout << "No song currently playing." << std::endl;
+        return;
+    }
+    std::cout << "Now playing: " << current->title << " - " << current->artist << std::endl;
 }
 
+// Missing method definitions required by DebugCLI
 void Playlist::sortByTitle()
 {
+    // Stub implementation to satisfy the compiler/linker
 }
+
 void Playlist::sortByArtist()
 {
+    // Stub implementation to satisfy the compiler/linker
+}
+
+static std::string toLowerString(std::string str) {
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+    return str;
+}
+
+std::vector<Song*> Playlist::searchSongs(const std::string &query)
+{
+    std::vector<Song *> results;
+
+    if (query.empty() || head == nullptr) {
+        return results;
+    }
+
+    std::string lowerQuery = toLowerString(query);
+    Song *currentSong = head;
+
+    do {
+        std::string lowerTitle = toLowerString(currentSong->title);
+        std::string lowerArtist = toLowerString(currentSong->artist);
+
+        if (lowerTitle.find(lowerQuery) != std::string::npos || 
+            lowerArtist.find(lowerQuery) != std::string::npos) {
+            results.push_back(currentSong);
+        }
+
+        currentSong = currentSong->next;
+    } while (currentSong != head);
+
+    return results;
 }
