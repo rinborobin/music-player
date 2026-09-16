@@ -50,40 +50,6 @@ void Playlist::addSong(const std::string &title,
     }
 }
 
-Song *Playlist::searchSongTitle(const std::string &title)
-{
-    if (head == nullptr) return nullptr;
-
-    Song *currentSong = head;
-    do
-    {
-        if (currentSong->title == title)
-        {
-            return currentSong;
-        }
-        currentSong = currentSong->next;
-    } while (currentSong != head);
-
-    return nullptr;
-}
-
-Song *Playlist::searchSongArtist(const std::string &artist)
-{
-    if (head == nullptr) return nullptr;
-
-    Song *currentSong = head;
-    do
-    {
-        if (currentSong->artist == artist)
-        {
-            return currentSong;
-        }
-        currentSong = currentSong->next;
-    } while (currentSong != head);
-
-    return nullptr;
-}
-
 void Playlist::removeSong(Song *song)
 {
     if (song == nullptr || head == nullptr)
@@ -200,6 +166,44 @@ static std::string toLowerString(std::string str) {
         return std::tolower(c);
     });
     return str;
+}
+
+Song *Playlist::searchSongTitle(const std::string &title)
+{
+    if (head == nullptr || title.empty()) return nullptr;
+
+    std::string lowerQuery = toLowerString(title);
+    Song *currentSong = head;
+    do
+    {
+        std::string lowerTitle = toLowerString(currentSong->title);
+        if (lowerTitle.find(lowerQuery) != std::string::npos)
+        {
+            return currentSong;
+        }
+        currentSong = currentSong->next;
+    } while (currentSong != head);
+
+    return nullptr;
+}
+
+Song *Playlist::searchSongArtist(const std::string &artist)
+{
+    if (head == nullptr || artist.empty()) return nullptr;
+
+    std::string lowerQuery = toLowerString(artist);
+    Song *currentSong = head;
+    do
+    {
+        std::string lowerArtist = toLowerString(currentSong->artist);
+        if (lowerArtist.find(lowerQuery) != std::string::npos)
+        {
+            return currentSong;
+        }
+        currentSong = currentSong->next;
+    } while (currentSong != head);
+
+    return nullptr;
 }
 
 std::vector<Song*> Playlist::searchSongs(const std::string &query)
