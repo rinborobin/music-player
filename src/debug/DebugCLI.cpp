@@ -61,6 +61,16 @@ void DebugCLI::printMenu()
     std::cout << "8. Show current song info\n";
     std::cout << "9. Test lyrics loading and lookup\n";
     std::cout << "10. Show playback progress for 5 seconds\n";
+    std::cout << "11. Add current song to playback queue\n";
+    std::cout << "12. Play next song from queue\n";
+    std::cout << "13. Peek queue front\n";
+    std::cout << "14. Display queue\n";
+    std::cout << "15. Clear queue\n";
+    std::cout << "16. Move song in queue\n";
+    std::cout << "17. Remove song from queue\n";
+    std::cout << "18. Sort playlist by title (debug)\n";
+    std::cout << "19. Sort playlist by artist (debug)\n";
+    std::cout << "20. Display all songs in current playlist\n";
     std::cout << "0. Exit\n";
     std::cout << "================================================\n";
 }
@@ -99,6 +109,36 @@ void DebugCLI::handleInput(int choice)
     case 10:
         testProgress();
         break;
+    case 11:
+        queueAddCurrentSong();
+        break;
+    case 12:
+        queuePlayNext();
+        break;
+    case 13:
+        queuePeek();
+        break;
+    case 14:
+        queueDisplay();
+        break;
+    case 15:
+        queueClear();
+        break;
+    case 16:
+        queueMove();
+        break;
+    case 17:
+        queueRemove();
+        break;
+    case 18:
+        testSortByTitle();
+        break;
+    case 19:
+        testSortByArtist();
+        break;
+    case 20:
+        displayAllSongs();
+        break;
     case 0:
         shouldExit = true;
         break;
@@ -135,6 +175,24 @@ void DebugCLI::setupSampleData()
         "Merry Christmas, i miss you",
         "Alex Chrichton",
         "../music/Alex Crichton - Merry Christmas, i miss you (Lyrics).mp3",
+        "");
+
+    playlist->addSong(
+        "Shape of My Heart",
+        "Backstreet Boys",
+        "../music/Backstreet Boys - Shape of My Heart (Lyrics).mp3",
+        "../music/Backstreet Boys - Shape of My Heart.lrc");
+
+    playlist->addSong(
+        "Test Track One",
+        "Zebra Band",
+        "../music/test1.mp3",
+        "");
+
+    playlist->addSong(
+        "Ambient Intro",
+        "Mellow Mind",
+        "../music/test2.mp3",
         "");
 
     LOG_INFO("Created " + std::to_string(playlistManager.getPlaylists().size()) + " playlists");
@@ -292,7 +350,6 @@ void DebugCLI::testLyrics()
 void DebugCLI::testProgress()
 {
     LOG_INFO("Monitoring playback progress for 5 seconds...");
-
     for (int i = 0; i < 50; ++i)
     {
         float progress = player.getPlaybackProgress();
@@ -306,4 +363,213 @@ void DebugCLI::testProgress()
 
     std::cout << std::endl;
     LOG_INFO("Progress monitoring complete");
+}
+
+void DebugCLI::testSortByTitle()
+{
+    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    if (playlist == nullptr)
+    {
+        LOG_ERROR("No current playlist");
+        return;
+    }
+
+    std::vector<Song *> before = playlist->getSongs();
+    if (before.empty())
+    {
+        LOG_WARN("Playlist is empty; nothing to sort");
+        return;
+    }
+
+    LOG_INFO("[sortByTitle] Playlist BEFORE sort:");
+    for (size_t i = 0; i < before.size(); ++i)
+    {
+        LOG_INFO("  " + std::to_string(i + 1) + ". " + before[i]->title + " - " + before[i]->artist);
+    }
+
+    LOG_INFO("[sortByTitle] Calling Playlist::sortByTitle()...");
+    playlist->sortByTitle();
+    LOG_INFO("[sortByTitle] Returned from Playlist::sortByTitle().");
+
+    std::vector<Song *> after = playlist->getSongs();
+    LOG_INFO("[sortByTitle] Playlist AFTER sort:");
+    for (size_t i = 0; i < after.size(); ++i)
+    {
+        LOG_INFO("  " + std::to_string(i + 1) + ". " + after[i]->title + " - " + after[i]->artist);
+    }
+
+    LOG_INFO("[sortByTitle] Note: sortByTitle() is currently not implemented, so order should be unchanged.");
+}
+
+void DebugCLI::testSortByArtist()
+{
+    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    if (playlist == nullptr)
+    {
+        LOG_ERROR("No current playlist");
+        return;
+    }
+
+    std::vector<Song *> before = playlist->getSongs();
+    if (before.empty())
+    {
+        LOG_WARN("Playlist is empty; nothing to sort");
+        return;
+    }
+
+    LOG_INFO("[sortByArtist] Playlist BEFORE sort:");
+    for (size_t i = 0; i < before.size(); ++i)
+    {
+        LOG_INFO("  " + std::to_string(i + 1) + ". " + before[i]->artist + " - " + before[i]->title);
+    }
+
+    LOG_INFO("[sortByArtist] Calling Playlist::sortByArtist()...");
+    playlist->sortByArtist();
+    LOG_INFO("[sortByArtist] Returned from Playlist::sortByArtist().");
+
+    std::vector<Song *> after = playlist->getSongs();
+    LOG_INFO("[sortByArtist] Playlist AFTER sort:");
+    for (size_t i = 0; i < after.size(); ++i)
+    {
+        LOG_INFO("  " + std::to_string(i + 1) + ". " + after[i]->artist + " - " + after[i]->title);
+    }
+
+    LOG_INFO("[sortByArtist] Note: sortByArtist() is currently not implemented, so order should be unchanged.");
+}
+
+void DebugCLI::displayAllSongs()
+{
+    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    if (playlist == nullptr)
+    {
+        LOG_ERROR("No current playlist");
+        return;
+    }
+
+    std::vector<Song *> songs = playlist->getSongs();
+    if (songs.empty())
+    {
+        LOG_WARN("Current playlist is empty");
+        return;
+    }
+
+    LOG_INFO("Songs in '" + playlist->getName() + "':");
+    for (size_t i = 0; i < songs.size(); ++i)
+    {
+        LOG_INFO("  " + std::to_string(i + 1) + ". " + songs[i]->title + " - " + songs[i]->artist);
+    }
+}
+
+void DebugCLI::queueAddCurrentSong()
+{
+    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    if (playlist == nullptr)
+    {
+        LOG_ERROR("No current playlist");
+        return;
+    }
+
+    Song *song = playlist->getCurrentSong();
+    if (song == nullptr)
+    {
+        LOG_ERROR("No current song to add to queue");
+        return;
+    }
+
+    // playbackQueue.enqueue(song);
+    LOG_WARN("Queue is not wired up in this debug build");
+}
+
+void DebugCLI::queuePlayNext()
+{
+    // Song *song = playbackQueue.dequeue();
+    // if (song == nullptr)
+    // {
+    //     LOG_WARN("Queue is empty");
+    //     return;
+    // }
+
+    // LOG_INFO("Playing next from queue: " + song->title);
+    // player.play(song->filePath);
+    LOG_WARN("Queue is not wired up in this debug build");
+}
+
+void DebugCLI::queuePeek()
+{
+    // Song *song = playbackQueue.peek();
+    // if (song == nullptr)
+    // {
+    //     LOG_INFO("Queue is empty");
+    //     return;
+    // }
+
+    // LOG_INFO("Next in queue: " + song->title + " - " + song->artist);
+    LOG_WARN("Queue is not wired up in this debug build");
+}
+
+void DebugCLI::queueDisplay()
+{
+    // playbackQueue.display();
+    LOG_WARN("Queue is not wired up in this debug build");
+}
+
+void DebugCLI::queueClear()
+{
+    // playbackQueue.clear();
+    LOG_WARN("Queue is not wired up in this debug build");
+}
+
+void DebugCLI::queueMove()
+{
+    // if (playbackQueue.size() < 2)
+    // {
+    //     LOG_WARN("Need at least 2 songs in queue to move");
+    //     return;
+    // }
+
+    // size_t fromIndex = 0;
+    // size_t toIndex = 0;
+
+    // std::cout << "Enter from index (0-based): ";
+    // if (!(std::cin >> fromIndex))
+    // {
+    //     std::cin.clear();
+    //     std::cin.ignore(10000, '\n');
+    //     LOG_WARN("Invalid input");
+    //     return;
+    // }
+
+    // std::cout << "Enter to index (0-based): ";
+    // if (!(std::cin >> toIndex))
+    // {
+    //     std::cin.clear();
+    //     std::cin.ignore(10000, '\n');
+    //     LOG_WARN("Invalid input");
+    //     return;
+    // }
+
+    // playbackQueue.move(fromIndex, toIndex);
+    LOG_WARN("Queue is not wired up in this debug build");
+}
+
+void DebugCLI::queueRemove()
+{
+    // if (playbackQueue.isEmpty())
+    // {
+    //     LOG_WARN("Queue is empty");
+    //     return;
+    // }
+
+    // size_t index = 0;
+    // std::cout << "Enter index to remove (0-based): ";
+    // if (!(std::cin >> index))
+    // {
+    //     std::cin.clear();
+    //     std::cin.ignore(10000, '\n');
+    //     LOG_WARN("Invalid input");
+    //     return;
+    // }
+
+    // playbackQueue.removeAt(index);
+    LOG_WARN("Queue is not wired up in this debug build");
 }

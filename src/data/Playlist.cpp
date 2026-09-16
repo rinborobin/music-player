@@ -185,3 +185,10 @@ void Playlist::displayCurrentSong()
 {
     std::cout << "Now playing: " + current->title + " - " + current->artist << std::endl;
 }
+
+void Playlist::sortByTitle()
+{
+}
+void Playlist::sortByArtist()
+{
+}

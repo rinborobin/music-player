@@ -24,7 +24,8 @@ add_executable(music-player
     src/ui/MusicPlayerUI.cpp
 
     src/data/LyricsManager.cpp
-    src/data/Queue.cpp
+
+    # src/data/Queue.cpp
 )
 
 target_link_libraries(music-player
@@ -43,6 +44,7 @@ add_executable(music-player-debug
     src/data/PlaylistManager.cpp
     src/audio/MusicEngine.cpp
     src/data/LyricsManager.cpp
+    # src/data/Queue.cpp
 )
 
 target_link_libraries(music-player-debug

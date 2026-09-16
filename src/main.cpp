@@ -43,6 +43,7 @@ int main()
             "What If I Call",
             "Alex Crichton",
             "../music/Alex Crichton - What If I Call (Lyrics).mp3",
+
             "../music/Alex Crichton - What If I Call.lrc");
 
         queue.addSongToQueue(playlist->getCurrentSong());
