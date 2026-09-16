@@ -24,6 +24,7 @@ add_executable(music-player
     src/ui/MusicPlayerUI.cpp
 
     src/data/LyricsManager.cpp
+
     # src/data/Queue.cpp
 )
 

@@ -3,6 +3,7 @@
 #include "data/PlaylistManager.h"
 #include "ui/MusicPlayerUI.h"
 #include "data/LyricsManager.h"
+#include "data/Queue.h"
 
 #include <filesystem>
 #include <iostream>
@@ -112,6 +113,13 @@ int main()
             musicFile(musicDir, "Alex Crichton - What If I Call (Lyrics).mp3"),
             musicFile(musicDir, "Alex Crichton - What If I Call.lrc"));
 
+        // playlist->addSong("Merry Christmas, i miss you", "Alex Chricton", "../music/Alex Crichton - Merry Christmas, i miss you (Lyrics).mp3");
+        playlist->addSong(
+            "What If I Call",
+            "Alex Crichton",
+            "../music/Alex Crichton - What If I Call (Lyrics).mp3",
+            "../music/Alex Crichton - What If I Call.lrc");
+        // playlist->addSong("Merry Christmas, i miss you", "Alex Chricton", "../music/Alex Crichton - Merry Christmas, i miss you (Lyrics).mp3");
         playlist->addSong(
             "Shape of My Heart",
             "Backstreet Boys",
@@ -133,20 +141,46 @@ int main()
         bool loaded = lyricsManager.loadLyrics(
             musicFile(musicDir, "Alex Crichton - What If I Call.lrc"));
 
-        if (!loaded)
+        queue.addSongToQueue(playlist->getCurrentSong());
+        queue.addSongToQueue(playlist->getCurrentSong()->next);
+
+        queue.addSongToQueue(playlist->getCurrentSong()->next->next);
+
+        // Song *qSong = queue.deQueue();
+
+        // std::cout << queue.getQueueSize();
+
+        // queue.removeQueueAt(1);
+
+        // std::cout << queue.getQueueSize();
+        //queue.clearQueue();
+
+        for (int i = 0; i < 3; i++)
         {
-            std::cout << "Failed to load lyrics.\n";
+            std::cout << queue.deQueue()->title << std::endl;
         }
-        else
-        {
-            std::cout << "Lyrics loaded successfully!\n";
 
-            auto lyrics = lyricsManager.getLyrics();
+        // bool loaded = lyricsManager.loadLyrics(
+        //     "../music/Alex Crichton - What If I Call.lrc");
 
-            MusicPlayerUI ui(player, playlistManager, lyricsManager);
-            ui.run();
+        // if (!loaded)
+        // {
+        //     std::cout << "Failed to load lyrics.\n";
+        // }
+        // else
+        // {
+        //     std::cout << "Lyrics loaded successfully!\n";
 
-            return 0;
-        }
+        //     auto lyrics = lyricsManager.getLyrics();
+
+        //     MusicPlayerUI ui(player, playlistManager, lyricsManager);
+        //     ui.run();
+
+        //     return 0;
+        // }
+    }
+    else
+    {
+        std::cout << "Null Playlist" << std::endl;
     }
 }
