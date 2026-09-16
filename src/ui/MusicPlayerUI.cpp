@@ -242,6 +242,21 @@ ftxui::Element MusicPlayerUI::renderNowPlaying() const
         playingSong->artist);
 }
 
+ftxui::Element MusicPlayerUI::renderLyrics() const
+{
+    float currentTime = player.getCurrentTime();
+    std::string currentLyric = lyricsManager.getCurrentLyric(currentTime);
+
+    auto lyricText = ftxui::paragraphAlignLeft(
+        currentLyric.empty() ? " " : " " + currentLyric);
+
+    return ftxui::window(
+               ftxui::text("── Lyrics ──"),
+               lyricText) |
+           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
+           ftxui::color(ftxui::Color::CyanLight);
+}
+
 ftxui::Element MusicPlayerUI::renderQueue() const
 {
     std::vector<ftxui::Element> queueElements;
@@ -449,6 +464,7 @@ ftxui::Element MusicPlayerUI::renderMainArea(
 
     auto songsContent = ftxui::vbox({
         songsList | ftxui::flex,
+        renderLyrics(),
         renderQueue(),
     });
 

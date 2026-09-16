@@ -60,6 +60,7 @@ private:
     // --- Renderers ---
     ftxui::Element renderProgressBar() const;
     ftxui::Element renderNowPlaying() const;
+    ftxui::Element renderLyrics() const;
     ftxui::Element renderQueue() const;
 
     // --- State ---
