@@ -17,6 +17,7 @@ MusicEngine::~MusicEngine()
 {
     if (soundInitialized)
     {
+        ma_sound_stop(&sound);
         ma_sound_uninit(&sound);
     }
 
@@ -28,6 +29,9 @@ MusicEngine::~MusicEngine()
 
 bool MusicEngine::isPlaying()
 {
+    if (!soundInitialized)
+        return false;
+
     return ma_sound_is_playing(&sound);
 }
 
@@ -80,6 +84,7 @@ bool MusicEngine::play(const std::string &filePath)
 
     if (soundInitialized)
     {
+        ma_sound_stop(&sound);
         ma_sound_uninit(&sound);
         soundInitialized = false;
     }

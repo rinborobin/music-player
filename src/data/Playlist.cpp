@@ -192,3 +192,18 @@ void Playlist::sortByTitle()
 void Playlist::sortByArtist()
 {
 }
+
+void Playlist::selectSong(int index)
+{
+    if (head == nullptr || index < 0)
+        return;
+
+    Song *selected = head;
+
+    for (int i = 0; i < index; i++)
+    {
+        selected = selected->next;
+    }
+
+    current = selected;
+}

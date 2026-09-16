@@ -33,6 +33,8 @@ public:
     void sortByArtist();
 
     std::string getName();
+
+    void selectSong(int index);
 };
 
 #endif
