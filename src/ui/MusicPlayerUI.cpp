@@ -1,13 +1,19 @@
 #include "MusicPlayerUI.h"
 #include "../data/LyricsManager.h"
 #include "../data/Song.h"
+#include "../utils/Logger.h"
 
+#include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <thread>
 #include <utility>
 
 #include <ftxui/dom/node.hpp>
 #include <ftxui/screen/color.hpp>
+
+#undef max
+#undef min
 
 MusicPlayerUI::MusicPlayerUI(
     MusicEngine &engine,
@@ -18,30 +24,104 @@ MusicPlayerUI::MusicPlayerUI(
       lyricsManager(lyricsManager)
 {
 }
+
 MusicPlayerUI::~MusicPlayerUI()
 {
     running = false;
     player.stop();
 }
 
-void MusicPlayerUI::playCurrentSong()
+// ---------------------------------------------------------------------------
+// Playback / state helpers
+// ---------------------------------------------------------------------------
+
+Playlist *MusicPlayerUI::getCurrentPlaylist() const
 {
+    return playlistManager.getCurrentPlaylist();
+}
+
+Song *MusicPlayerUI::getCurrentSong() const
+{
+    Playlist *playlist = getCurrentPlaylist();
+    return (playlist != nullptr) ? playlist->getCurrentSong() : nullptr;
+}
+
+void MusicPlayerUI::syncSelectedSongWithCurrent()
+{
+    Playlist *playlist = getCurrentPlaylist();
+    if (playlist == nullptr)
+        return;
+
+    Song *currentSong = playlist->getCurrentSong();
+    const auto &songs = playlist->getSongs();
+
+    for (int i = 0; i < static_cast<int>(songs.size()); ++i)
+    {
+        if (songs[i] == currentSong)
+        {
+            selectedSong = i;
+            return;
+        }
+    }
+}
+
+void MusicPlayerUI::resetPlaybackState()
+{
+    player.stop();
+    started = false;
+    paused = false;
+    lyricsManager.clear();
+}
+
+void MusicPlayerUI::refreshSongNames()
+{
+    songNames_.clear();
+
     Playlist *playlist = playlistManager.getCurrentPlaylist();
 
-    if (playlist != nullptr)
+    if (playlist == nullptr)
+        return;
+
+    auto songs = playlist->getSongs();
+
+    for (Song *song : songs)
     {
-        Song *song = playlist->getCurrentSong();
+        songNames_.push_back(song->title);
+    }
+}
+// ---------------------------------------------------------------------------
+// Playback controls
+// ---------------------------------------------------------------------------
 
-        if (song != nullptr)
-        {
-            lyricsManager.clear();
-            lyricsManager.loadLyrics(song->lyricPath);
+void MusicPlayerUI::playCurrentSong()
+{
+    Song *song = getCurrentSong();
 
-            player.play(song->filePath);
+    if (song == nullptr)
+    {
+        LOG_WARN("No current song to play");
+        return;
+    }
 
-            started = true;
-            paused = false;
-        }
+    LOG_INFO("Attempting to play: " + song->title + " (" + song->filePath + ")");
+
+    lyricsManager.clear();
+    lyricsManager.loadLyrics(song->lyricPath);
+
+    if (player.play(song->filePath))
+    {
+        LOG_INFO("Playback started: " + song->title);
+        playingSong = song;
+        playingSongIndex = selectedSong;
+        started = true;
+        paused = false;
+    }
+    else
+    {
+        LOG_ERROR("Failed to play: " + song->filePath);
+        playingSong = nullptr;
+        playingSongIndex = -1;
+        started = false;
     }
 }
 
@@ -65,124 +145,36 @@ void MusicPlayerUI::togglePlayPause()
 
 void MusicPlayerUI::playNext()
 {
-    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    Playlist *playlist = getCurrentPlaylist();
+    if (playlist == nullptr)
+        return;
 
-    if (playlist != nullptr)
-    {
-        playlist->nextSong();
-
-        Song *song = playlist->getCurrentSong();
-
-        if (song != nullptr)
-        {
-            lyricsManager.clear();
-            lyricsManager.loadLyrics(song->lyricPath);
-
-            player.play(song->filePath);
-
-            started = true;
-            paused = false;
-        }
-    }
+    playlist->nextSong();
+    syncSelectedSongWithCurrent();
+    playCurrentSong();
 }
 
 void MusicPlayerUI::playPrevious()
 {
-    Playlist *playlist = playlistManager.getCurrentPlaylist();
+    Playlist *playlist = getCurrentPlaylist();
+    if (playlist == nullptr)
+        return;
 
-    if (playlist != nullptr)
-    {
-        playlist->previousSong();
-
-        Song *song = playlist->getCurrentSong();
-
-        if (song != nullptr)
-        {
-            lyricsManager.clear();
-            lyricsManager.loadLyrics(song->lyricPath);
-
-            player.play(song->filePath);
-
-            started = true;
-            paused = false;
-        }
-    }
+    playlist->previousSong();
+    syncSelectedSongWithCurrent();
+    playCurrentSong();
 }
 
-ftxui::Element MusicPlayerUI::renderPlaylists()
-{
-    auto playlists = playlistManager.getPlaylists();
+// ---------------------------------------------------------------------------
+// Renderers
+// ---------------------------------------------------------------------------
 
-    std::vector<ftxui::Element> playlistElements;
-    for (Playlist *playlistItem : playlists)
-    {
-        playlistElements.push_back(
-            ftxui::text("  " + playlistItem->getName()));
-    }
-
-    return ftxui::window(
-        ftxui::text("── Playlists ──") |
-            ftxui::size(ftxui::WIDTH, ftxui::GREATER_THAN, 15) |
-            ftxui::center,
-        ftxui::vbox({
-            ftxui::text("  "),
-            ftxui::vbox(std::move(playlistElements)),
-        }));
-}
-ftxui::Element MusicPlayerUI::renderSongs()
-{
-    std::vector<ftxui::Element> songElements;
-
-    Playlist *playlist = playlistManager.getCurrentPlaylist();
-
-    float currentTime = player.getCurrentTime();
-
-    std::string currentLyric =
-        lyricsManager.getCurrentLyric(currentTime);
-
-    if (playlist != nullptr)
-    {
-        auto songList = playlist->getSongs();
-
-        int index = 1;
-
-        for (Song *song : songList)
-        {
-            songElements.push_back(
-                ftxui::text(
-                    " " + std::to_string(index) + ". " + song->title));
-
-            index++;
-        }
-    }
-    auto songsList = ftxui::vbox(std::move(songElements));
-
-    auto lyricText =
-        ftxui::paragraphAlignLeft(currentLyric.empty()
-                                      ? " "
-                                      : " " + currentLyric);
-
-    auto lyricsBox = ftxui::window(
-                         ftxui::text("── Lyrics ──"),
-                         lyricText) |
-                     ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
-                     ftxui::xflex;
-
-    return ftxui::vbox({
-        songsList,
-        ftxui::filler(),
-        lyricsBox,
-    });
-}
-ftxui::Element MusicPlayerUI::renderProgressBar()
+ftxui::Element MusicPlayerUI::renderProgressBar() const
 {
     float progress = playbackProgress.load();
     const int barWidth = 55;
     int filled = static_cast<int>(progress * barWidth);
-    if (filled < 0)
-        filled = 0;
-    if (filled > barWidth)
-        filled = barWidth;
+    filled = std::max(0, std::min(filled, barWidth));
     int empty = barWidth - filled;
 
     const char *filledChar = u8"\u2501";
@@ -203,42 +195,215 @@ ftxui::Element MusicPlayerUI::renderProgressBar()
     });
 }
 
-// ftxui::Element MusicPlayerUI::renderLyrics()
-// {
-//     float currentTime = player.getCurrentTime();
-
-//     std::string currentLyric =
-//         lyricsManager.getCurrentLyric(currentTime);
-
-//     return ftxui::window(
-//         ftxui::text("── Lyrics ──"),
-//         ftxui::vbox({
-//             ftxui::text(" "),
-//             ftxui::text(currentLyric) | ftxui::center,
-//             ftxui::text(" "),
-//         }));
-// }
-
-ftxui::Element MusicPlayerUI::renderNowPlaying()
+ftxui::Element MusicPlayerUI::renderNowPlaying() const
 {
-    Playlist *playlist = playlistManager.getCurrentPlaylist();
-    Song *currentSong =
-        (playlist != nullptr) ? playlist->getCurrentSong() : nullptr;
+    if (playingSong == nullptr)
+    {
+        return ftxui::text("   Nothing playing");
+    }
 
-    return ftxui::vbox({
-        currentSong != nullptr
-            ? ftxui::text(
-                  "   NOW PLAYING: " +
-                  currentSong->title +
-                  " - " +
-                  currentSong->artist)
-            : ftxui::text("   Nothing playing"),
+    return ftxui::text(
+        "   NOW PLAYING: " +
+        playingSong->title +
+        " - " +
+        playingSong->artist);
+}
+
+// ---------------------------------------------------------------------------
+// Component builders
+// ---------------------------------------------------------------------------
+
+ftxui::Component MusicPlayerUI::createSongMenu(ftxui::ScreenInteractive &screen)
+{
+    refreshSongNames();
+
+    ftxui::MenuOption songOption;
+
+    songOption.entries_option.transform =
+        [this](const ftxui::EntryState &state)
+    {
+        Playlist *playlist = playlistManager.getCurrentPlaylist();
+
+        if (playlist == nullptr)
+            return ftxui::text("");
+
+        auto songs = playlist->getSongs();
+
+        if (state.index < 0 ||
+            state.index >= static_cast<int>(songs.size()))
+        {
+            return ftxui::text("");
+        }
+
+        Song *song = songs[state.index];
+
+        std::string prefix =
+            (song == playingSong) ? "> " : "  ";
+
+        auto element =
+            ftxui::text(prefix + song->title);
+
+        if (state.focused)
+        {
+            return element | ftxui::bgcolor(ftxui::Color::RGB(240, 150, 90)) | ftxui::color(ftxui::Color::White) | ftxui::bold;
+        }
+
+        return element | ftxui::color(ftxui::Color::White);
+    };
+
+    songOption.on_change = [&]
+    {
+        if (playlistManager.getCurrentPlaylist() == nullptr)
+            return;
+
+        playPending_ = true;
+        screen.PostEvent(ftxui::Event::Custom);
+    };
+
+    auto songMenu = ftxui::Menu(&songNames_, &selectedSong, songOption);
+
+    return songMenu | ftxui::CatchEvent([&](ftxui::Event event)
+                                        {
+        if (event.is_mouse() &&
+            event.mouse().button == ftxui::Mouse::Left &&
+            event.mouse().motion == ftxui::Mouse::Pressed)
+        {
+            playPending_ = true;
+            screen.PostEvent(ftxui::Event::Custom);
+        }
+
+        return false; });
+}
+
+ftxui::Component MusicPlayerUI::createPlaylistMenu()
+{
+    playlistNames_.clear();
+
+    for (Playlist *playlist : playlistManager.getPlaylists())
+    {
+        playlistNames_.push_back(playlist->getName());
+    }
+
+    ftxui::MenuOption playlistOption;
+
+    playlistOption.on_change = [&]
+    {
+        playlistManager.selectPlaylist(selectedPlaylist_);
+
+        selectedSong = -1;
+        refreshSongNames();
+    };
+
+    return ftxui::Menu(
+        &playlistNames_,
+        &selectedPlaylist_,
+        playlistOption);
+}
+
+ftxui::Component MusicPlayerUI::createControlButtons()
+{
+    ftxui::ButtonOption option;
+    option.transform = [](const ftxui::EntryState &state)
+    {
+        return ftxui::text(state.label) |
+               ftxui::center |
+               ftxui::borderRounded |
+               ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 10) |
+               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+    };
+
+    ftxui::ButtonOption playOption;
+    playOption.transform = [this](const ftxui::EntryState &state)
+    {
+        std::string label = (!started || paused) ? "▶" : "⏯";
+        return ftxui::text(label) |
+               ftxui::center |
+               ftxui::borderRounded |
+               ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 11) |
+               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+    };
+
+    auto previousButton = ftxui::Button(
+        "⏮",
+        [this]
+        { playPrevious(); },
+        option);
+
+    auto playButton = ftxui::Button(
+        "",
+        [this]
+        { togglePlayPause(); },
+        playOption);
+
+    auto nextButton = ftxui::Button(
+        "⏭",
+        [this]
+        { playNext(); },
+        option);
+
+    return ftxui::Container::Horizontal({
+        previousButton,
+        playButton,
+        nextButton,
     });
 }
 
+// ---------------------------------------------------------------------------
+// Layout renderers
+// ---------------------------------------------------------------------------
+
+ftxui::Element MusicPlayerUI::renderMainArea(
+    ftxui::Component playlistMenu,
+    ftxui::Component songMenu) const
+{
+    auto playlistPanel = ftxui::window(
+                             ftxui::text("── Playlists ──") |
+                                 ftxui::color(ftxui::Color::RGB(200, 0, 0)) |
+                                 ftxui::bold,
+                             playlistMenu->Render() |
+                                 ftxui::color(ftxui::Color::White)) |
+                         ftxui::color(ftxui::Color::RGB(200, 0, 0));
+
+    auto songsPanel = ftxui::window(
+                          ftxui::text("── Songs ──"),
+                          songNames_.empty()
+                              ? ftxui::text("  No songs in this playlist")
+                              : songMenu->Render()) |
+                      ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 60);
+
+    return ftxui::hbox({
+               playlistPanel | ftxui::flex_grow,
+               songsPanel,
+           }) |
+           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 30);
+}
+
+ftxui::Element MusicPlayerUI::renderControlBar(
+    ftxui::Component controlButtons) const
+{
+    auto progressBar = renderProgressBar();
+    auto nowPlaying = renderNowPlaying();
+
+    auto infoBox = ftxui::vbox({
+                       nowPlaying,
+                       ftxui::text(" "),
+                       progressBar,
+                   }) |
+                   ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+
+    return ftxui::hbox({
+        controlButtons->Render() | ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3),
+        infoBox,
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Main loop
+// ---------------------------------------------------------------------------
+
 void MusicPlayerUI::run()
 {
-    auto screen = ftxui::ScreenInteractive::TerminalOutput();
+    auto screen = ftxui::ScreenInteractive::Fullscreen();
 
     running = true;
     std::thread progressThread([this, &screen]
@@ -250,85 +415,60 @@ void MusicPlayerUI::run()
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } });
 
-    ftxui::ButtonOption option;
-    option.transform = [](const ftxui::EntryState &state)
-    {
-        return ftxui::text(state.label) | ftxui::center | ftxui::borderRounded;
-    };
+    auto songMenu = createSongMenu(screen);
+    auto playlistMenu = createPlaylistMenu();
+    auto controlButtons = createControlButtons();
 
-    ftxui::ButtonOption playOption;
-    playOption.transform = [this](const ftxui::EntryState &state)
-    {
-        std::string label;
-        if (!started || paused)
-            label = "▶";
-        else
-            label = "⏯";
-
-        return ftxui::text(label) | ftxui::center | ftxui::borderRounded;
-    };
-
-    auto previousButton = ftxui::Button("⏮", [this]
-                                        { playPrevious(); }, option);
-    auto playButton = ftxui::Button("", [this]
-                                    { togglePlayPause(); }, playOption);
-    auto nextButton = ftxui::Button("⏭", [this]
-                                    { playNext(); }, option);
-
-    auto component = ftxui::Container::Horizontal({
-        previousButton,
-        playButton,
-        nextButton,
+    auto mainContainer = ftxui::Container::Horizontal({
+        playlistMenu,
+        songMenu,
     });
 
-    auto renderer = ftxui::Renderer(component, [this, previousButton, playButton, nextButton]
-                                    {
-        auto playlist_panel = renderPlaylists();
-        auto songs_panel =
-    ftxui::window(
-        ftxui::text("── Songs ──"),
-        renderSongs()
-    ) |
-    ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 60);
-        // auto lyrics_panel = renderLyrics();
-        auto progressBar = renderProgressBar();
-        auto nowPlaying = renderNowPlaying();
+    auto component = ftxui::Container::Vertical({
+        mainContainer,
+        controlButtons,
+    });
 
-        auto controls = ftxui::hbox({
-            previousButton->Render()
-                | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 10)
-                | ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3),
+    component = component | ftxui::CatchEvent([&](ftxui::Event event)
+                                              {
+        if (event == ftxui::Event::Custom && playPending_)
+        {
+            playPending_ = false;
 
-            playButton->Render()
-                | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 11)
-                | ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3),
+            Playlist *playlist = getCurrentPlaylist();
+            if (playlist != nullptr &&
+                selectedSong >= 0 &&
+                selectedSong < static_cast<int>(playlist->getSongs().size()))
+            {
+                playlist->selectSong(selectedSong);
+                playCurrentSong();
+            }
 
-            nextButton->Render()
-                | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 10)
-                | ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3),
+            return true;
+        }
 
-            ftxui::vbox({
-                nowPlaying,
-                ftxui::text(" "),
-                progressBar,
-            }) | ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3),
+        return false; });
+
+    auto renderer = ftxui::Renderer(
+        component,
+        [this, playlistMenu, songMenu, controlButtons]
+        {
+            auto mainArea = renderMainArea(playlistMenu, songMenu);
+            auto controls = renderControlBar(controlButtons);
+
+            auto document = ftxui::vbox({
+                                  mainArea | ftxui::flex,
+                                  controls,
+                              }) |
+                              ftxui::borderRounded |
+                              ftxui::bgcolor(ftxui::Color::RGB(0, 0, 60)) |
+                              ftxui::color(ftxui::Color::CyanLight);
+
+            return document |
+                   ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 100) |
+                   ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 35) |
+                   ftxui::center;
         });
-
-       auto mainArea = ftxui::hbox({
-    playlist_panel | ftxui::flex_grow,
-    songs_panel,
-}) | ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 30);
-
-        auto document = ftxui::vbox({
-    mainArea | ftxui::flex,
-    controls,
-}) |
-            ftxui::borderRounded |
-            ftxui::bgcolor(ftxui::Color::RGB(0, 0, 60)) |
-            ftxui::color(ftxui::Color::CyanLight);
-
-        return document |
-            ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 100); });
 
     screen.Loop(renderer);
 

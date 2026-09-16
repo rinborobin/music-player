@@ -23,26 +23,53 @@ public:
         LyricsManager &lyricsManager);
     ~MusicPlayerUI();
 
+    MusicEngine &player;
+    PlaylistManager &playlistManager;
+    LyricsManager &lyricsManager;
+
     void run();
 
-private:
     void playCurrentSong();
     void togglePlayPause();
     void playNext();
     void playPrevious();
 
-    ftxui::Element renderPlaylists();
-    ftxui::Element renderSongs();
-    // ftxui::Element renderLyrics();
-    ftxui::Element renderProgressBar();
-    ftxui::Element renderNowPlaying();
+private:
+    // --- Playback / state helpers ---
+    Playlist *getCurrentPlaylist() const;
+    Song *getCurrentSong() const;
 
-    MusicEngine &player;
-    PlaylistManager &playlistManager;
-    LyricsManager &lyricsManager;
+    void syncSelectedSongWithCurrent();
+    void resetPlaybackState();
+    void refreshSongNames();
 
+    // --- Component builders ---
+    ftxui::Component createSongMenu(ftxui::ScreenInteractive &screen);
+    ftxui::Component createPlaylistMenu();
+    ftxui::Component createControlButtons();
+
+    ftxui::Element renderMainArea(
+        ftxui::Component playlistMenu,
+        ftxui::Component songMenu) const;
+    ftxui::Element renderControlBar(
+        ftxui::Component controlButtons) const;
+
+    // --- Renderers ---
+    ftxui::Element renderProgressBar() const;
+    ftxui::Element renderNowPlaying() const;
+
+    // --- State ---
     bool started = false;
     bool paused = false;
+    bool playPending_ = false;
+
+    int selectedSong = 0;
+    int selectedPlaylist_ = 0;
+    Song *playingSong = nullptr;
+    int playingSongIndex = -1;
+
+    std::vector<std::string> songNames_;
+    std::vector<std::string> playlistNames_;
 
     std::atomic<float> playbackProgress{0.0f};
     std::atomic<bool> running{false};
