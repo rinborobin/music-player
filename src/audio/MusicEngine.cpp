@@ -105,6 +105,8 @@ bool MusicEngine::play(const std::string &filePath)
 
     soundInitialized = true;
 
+    ma_sound_set_end_callback(&sound, soundEndCallback, this);
+
     bool started = (ma_sound_start(&sound) == MA_SUCCESS);
     if (started)
     {
@@ -116,6 +118,20 @@ bool MusicEngine::play(const std::string &filePath)
     }
 
     return started;
+}
+
+void MusicEngine::soundEndCallback(void *userData, ma_sound *sound)
+{
+    MusicEngine *engine = static_cast<MusicEngine *>(userData);
+    if (engine != nullptr)
+    {
+        engine->finished_.store(true);
+    }
+}
+
+bool MusicEngine::consumeFinished()
+{
+    return finished_.exchange(false);
 }
 
 void MusicEngine::stop()

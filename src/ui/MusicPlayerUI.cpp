@@ -497,6 +497,12 @@ void MusicPlayerUI::run()
         while (running)
         {
             playbackProgress = player.getPlaybackProgress();
+
+            if (player.consumeFinished())
+            {
+                playNext();
+            }
+
             screen.PostEvent(ftxui::Event::Custom);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } });
