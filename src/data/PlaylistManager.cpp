@@ -1,18 +1,18 @@
 #include "PlaylistManager.h"
 #include "../utils/Logger.h"
 
-void PlaylistManager::createPlaylist(const std::string &name)
+Playlist *PlaylistManager::createPlaylist(const std::string &name)
 {
     Playlist *newPlaylist = new Playlist(name);
 
     playlists.push_back(newPlaylist);
-    LOG_INFO("Created playlist: " + name);
 
     if (currentPlaylist == nullptr)
     {
         currentPlaylist = newPlaylist;
-        LOG_INFO("Set current playlist to: " + name);
     }
+
+    return newPlaylist;
 }
 
 std::vector<Playlist *> PlaylistManager::getPlaylists()
@@ -23,4 +23,12 @@ std::vector<Playlist *> PlaylistManager::getPlaylists()
 Playlist *PlaylistManager::getCurrentPlaylist()
 {
     return currentPlaylist;
+}
+
+void PlaylistManager::selectPlaylist(int index)
+{
+    if (index < 0 || index >= static_cast<int>(playlists.size()))
+        return;
+
+    currentPlaylist = playlists[index];
 }

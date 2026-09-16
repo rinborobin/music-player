@@ -8,11 +8,13 @@
 class PlaylistManager
 {
 public:
-    void createPlaylist(const std::string &name);
+    Playlist *createPlaylist(const std::string &name);
 
     std::vector<Playlist *> getPlaylists();
 
     Playlist *getCurrentPlaylist();
+
+    void selectPlaylist(int index);
 
 private:
     std::vector<Playlist *> playlists;
