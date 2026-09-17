@@ -8,6 +8,8 @@
 class PlaylistManager
 {
 public:
+    ~PlaylistManager();
+
     Playlist *createPlaylist(const std::string &name);
 
     std::vector<Playlist *> getPlaylists();
