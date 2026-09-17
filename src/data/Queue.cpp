@@ -14,18 +14,20 @@ bool Queue::isEmpty()
     return frontSong == nullptr;
 }
 
-int Queue::getQueueSize() { return count; }
+int Queue::getQueueSize()
+{
+    return count;
+}
 
 void Queue::addSongToQueue(Song *song)
 {
-    // Song *newSong = new Song;
+    if (song == nullptr)
+        return;
 
     QueueSong *qSong = new QueueSong;
 
     qSong->song = song;
     qSong->next = nullptr;
-
-    // std::cout << isEmpty();
 
     if (isEmpty())
     {
@@ -37,8 +39,9 @@ void Queue::addSongToQueue(Song *song)
         rearSong->next = qSong;
         rearSong = qSong;
     }
+
     count++;
-};
+}
 
 Song *Queue::deQueue()
 {
@@ -52,43 +55,76 @@ Song *Queue::deQueue()
     frontSong = frontSong->next;
 
     if (frontSong == nullptr)
-        rearSong == nullptr;
+    {
+        rearSong = nullptr;
+    }
+
     delete temp;
     count--;
 
     return song;
 }
+
 void Queue::clearQueue()
 {
-    if (isEmpty())
-    {
-        return;
-    }
     while (frontSong != nullptr)
     {
         QueueSong *temp = frontSong;
         frontSong = frontSong->next;
-        if (frontSong == nullptr)
-            rearSong = nullptr;
         delete temp;
-        count--;
     }
-    // std::cout << "H";
-};
+
+    rearSong = nullptr;
+    count = 0;
+}
 
 void Queue::removeQueueAt(int index)
 {
-    int t_index = 0;
+    if (index < 0 || index >= count || frontSong == nullptr)
+        return;
 
-    QueueSong *cur = frontSong;
-    QueueSong *prev = frontSong;
-    while (t_index != index - 1)
+    QueueSong *toDelete = nullptr;
+
+    if (index == 0)
     {
-        prev = prev->next;
-        cur = prev;
+        toDelete = frontSong;
+        frontSong = frontSong->next;
+        if (frontSong == nullptr)
+        {
+            rearSong = nullptr;
+        }
     }
-    cur = cur->next;
-    prev->next = cur->next;
-    delete cur;
+    else
+    {
+        QueueSong *prev = frontSong;
+        for (int i = 0; i < index - 1; ++i)
+        {
+            prev = prev->next;
+        }
+
+        toDelete = prev->next;
+        prev->next = toDelete->next;
+
+        if (toDelete == rearSong)
+        {
+            rearSong = prev;
+        }
+    }
+
+    delete toDelete;
     count--;
+}
+
+std::vector<Song *> Queue::getQueueSongs() const
+{
+    std::vector<Song *> songs;
+    QueueSong *current = frontSong;
+
+    while (current != nullptr)
+    {
+        songs.push_back(current->song);
+        current = current->next;
+    }
+
+    return songs;
 }

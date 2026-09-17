@@ -4,6 +4,7 @@
 #include "../audio/MusicEngine.h"
 #include "../data/PlaylistManager.h"
 #include "../data/LyricsManager.h"
+#include "../data/Queue.h"
 
 #include <atomic>
 #include <memory>
@@ -30,9 +31,11 @@ public:
     void run();
 
     void playCurrentSong();
+    void playSong(Song *song);
     void togglePlayPause();
     void playNext();
     void playPrevious();
+    void addSelectedSongToQueue();
 
 private:
     // --- Playback / state helpers ---
@@ -57,6 +60,8 @@ private:
     // --- Renderers ---
     ftxui::Element renderProgressBar() const;
     ftxui::Element renderNowPlaying() const;
+    ftxui::Element renderLyrics() const;
+    ftxui::Element renderQueue() const;
 
     // --- State ---
     bool started = false;
@@ -70,6 +75,8 @@ private:
 
     std::vector<std::string> songNames_;
     std::vector<std::string> playlistNames_;
+
+    Queue playbackQueue;
 
     std::atomic<float> playbackProgress{0.0f};
     std::atomic<bool> running{false};

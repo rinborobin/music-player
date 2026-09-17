@@ -2,17 +2,18 @@
 #define QUEUE_H
 
 #include "Song.h"
+#include <vector>
 
 class Queue
 {
 public:
-    // void enqueue(Song *song);
     bool isEmpty();
+    int getQueueSize();
     void addSongToQueue(Song *song);
     Song *deQueue();
     void clearQueue();
-    int getQueueSize();
     void removeQueueAt(int index);
+    std::vector<Song *> getQueueSongs() const;
 
 private:
     struct QueueSong

@@ -95,8 +95,11 @@ void MusicPlayerUI::refreshSongNames()
 
 void MusicPlayerUI::playCurrentSong()
 {
-    Song *song = getCurrentSong();
+    playSong(getCurrentSong());
+}
 
+void MusicPlayerUI::playSong(Song *song)
+{
     if (song == nullptr)
     {
         LOG_WARN("No current song to play");
@@ -112,7 +115,6 @@ void MusicPlayerUI::playCurrentSong()
     {
         LOG_INFO("Playback started: " + song->title);
         playingSong = song;
-        playingSongIndex = selectedSong;
         started = true;
         paused = false;
     }
@@ -145,6 +147,16 @@ void MusicPlayerUI::togglePlayPause()
 
 void MusicPlayerUI::playNext()
 {
+    if (!playbackQueue.isEmpty())
+    {
+        Song *nextSong = playbackQueue.deQueue();
+        if (nextSong != nullptr)
+        {
+            playSong(nextSong);
+            return;
+        }
+    }
+
     Playlist *playlist = getCurrentPlaylist();
     if (playlist == nullptr)
         return;
@@ -163,6 +175,27 @@ void MusicPlayerUI::playPrevious()
     playlist->previousSong();
     syncSelectedSongWithCurrent();
     playCurrentSong();
+}
+
+void MusicPlayerUI::addSelectedSongToQueue()
+{
+    Playlist *playlist = getCurrentPlaylist();
+    if (playlist == nullptr)
+    {
+        LOG_WARN("No playlist selected; cannot add to queue");
+        return;
+    }
+
+    auto songs = playlist->getSongs();
+    if (selectedSong < 0 || selectedSong >= static_cast<int>(songs.size()))
+    {
+        LOG_WARN("No song selected; cannot add to queue");
+        return;
+    }
+
+    Song *song = songs[selectedSong];
+    playbackQueue.addSongToQueue(song);
+    LOG_INFO("Added to queue: " + song->title);
 }
 
 // ---------------------------------------------------------------------------
@@ -207,6 +240,50 @@ ftxui::Element MusicPlayerUI::renderNowPlaying() const
         playingSong->title +
         " - " +
         playingSong->artist);
+}
+
+ftxui::Element MusicPlayerUI::renderLyrics() const
+{
+    float currentTime = player.getCurrentTime();
+    std::string currentLyric = lyricsManager.getCurrentLyric(currentTime);
+
+    auto lyricText = ftxui::paragraphAlignLeft(
+        currentLyric.empty() ? " " : " " + currentLyric);
+
+    return ftxui::window(
+               ftxui::text("── Lyrics ──"),
+               lyricText) |
+           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
+           ftxui::color(ftxui::Color::CyanLight);
+}
+
+ftxui::Element MusicPlayerUI::renderQueue() const
+{
+    std::vector<ftxui::Element> queueElements;
+    auto queuedSongs = playbackQueue.getQueueSongs();
+
+    if (queuedSongs.empty())
+    {
+        queueElements.push_back(
+            ftxui::text("  Queue is empty") |
+            ftxui::color(ftxui::Color::White));
+    }
+    else
+    {
+        for (size_t i = 0; i < queuedSongs.size(); ++i)
+        {
+            std::string prefix = (i == 0) ? "> " : "  ";
+            queueElements.push_back(
+                ftxui::text("  " + std::to_string(i + 1) + ". " + queuedSongs[i]->title) |
+                ftxui::color(ftxui::Color::White));
+        }
+    }
+
+    return ftxui::window(
+               ftxui::text("── Up Next ──"),
+               ftxui::vbox(std::move(queueElements))) |
+           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 6) |
+           ftxui::color(ftxui::Color::CyanLight);
 }
 
 // ---------------------------------------------------------------------------
@@ -341,10 +418,27 @@ ftxui::Component MusicPlayerUI::createControlButtons()
         { playNext(); },
         option);
 
+    ftxui::ButtonOption addOption;
+    addOption.transform = [](const ftxui::EntryState &state)
+    {
+        return ftxui::text("Add") |
+               ftxui::center |
+               ftxui::borderRounded |
+               ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 8) |
+               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+    };
+
+    auto addQueueButton = ftxui::Button(
+        "Add",
+        [this]
+        { addSelectedSongToQueue(); },
+        addOption);
+
     return ftxui::Container::Horizontal({
         previousButton,
         playButton,
         nextButton,
+        addQueueButton,
     });
 }
 
@@ -364,11 +458,19 @@ ftxui::Element MusicPlayerUI::renderMainArea(
                                  ftxui::color(ftxui::Color::White)) |
                          ftxui::color(ftxui::Color::RGB(200, 0, 0));
 
+    auto songsList = songNames_.empty()
+                         ? ftxui::text("  No songs in this playlist")
+                         : songMenu->Render();
+
+    auto songsContent = ftxui::vbox({
+        songsList | ftxui::flex,
+        renderLyrics(),
+        renderQueue(),
+    });
+
     auto songsPanel = ftxui::window(
                           ftxui::text("── Songs ──"),
-                          songNames_.empty()
-                              ? ftxui::text("  No songs in this playlist")
-                              : songMenu->Render()) |
+                          songsContent) |
                       ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 60);
 
     return ftxui::hbox({
@@ -411,6 +513,12 @@ void MusicPlayerUI::run()
         while (running)
         {
             playbackProgress = player.getPlaybackProgress();
+
+            if (player.consumeFinished())
+            {
+                playNext();
+            }
+
             screen.PostEvent(ftxui::Event::Custom);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } });

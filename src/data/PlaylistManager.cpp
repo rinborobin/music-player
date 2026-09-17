@@ -1,6 +1,17 @@
 #include "PlaylistManager.h"
 #include "../utils/Logger.h"
 
+PlaylistManager::~PlaylistManager()
+{
+    for (Playlist *playlist : playlists)
+    {
+        delete playlist;
+    }
+
+    playlists.clear();
+    currentPlaylist = nullptr;
+}
+
 Playlist *PlaylistManager::createPlaylist(const std::string &name)
 {
     Playlist *newPlaylist = new Playlist(name);
